@@ -15,7 +15,7 @@ It is an eval library, not a production orchestration framework. The runtime liv
 | Component | What it is |
 |---|---|
 | **Members** | The agents: each a name, role, `Agent`, model, tools, limits and conversation. Any `Agent` that keeps its work inside its invocation: `react()`, synchronous `deepagent()`, or a bridged Claude Code or Codex. ([Members](swarm.md#members)) |
-| **Channels** | How members share information: the shared sandbox filesystem from M1; direct messages from M2; later, optionally, a notes/fact log, a task list with claims, and a board. Each is a `@swarm_channel` registry object. ([Channels](swarm.md#channels)) |
+| **Channels** | How members share information: the shared sandbox filesystem from M1; a shared memory routed through the bus from M2; later, optionally, direct messages, a notes/fact log, a task list with claims, and a board. Each is a `@swarm_channel` registry object. ([Channels](swarm.md#channels)) |
 | **Controller** | How the swarm runs: topology (leaderless first; coordinator tree and lead-with-teammates later), start and wake, termination, and the final-answer chain. Each topology is a `@swarm_controller` registry object; the swarm's fixed runtime does the drain and finalisation. ([Controller](swarm.md#controller-topology-termination-final-answer)) |
 | **Observer** | What is recorded and where monitors attach: one bus for every sanctioned message, evidence events, a realized-cost ledger, and swarm metrics. ([Observer](swarm.md#observer-evidence-accounting-and-metrics)) |
 
@@ -40,7 +40,7 @@ A swarm of one member with no channels is a single agent with the same accountin
 
 **The swarm owns its members' work, including descendants.** On termination it cancels and awaits everything a member started before it finalises, so nothing edits shared files during the final answer and all usage is counted.
 - `background()` attaches work to the sample, not the caller, so M1 rejects background deepagent members.
-- Supporting them needs a scoped owner for `background()` in inspect_ai: later, if wanted.
+- Supporting them needs a scoped owner for `background()` in inspect_ai, which M2 adds ([plan](swarm-implementation-plan.md#m2-ready-for-external-usage)).
 - ([Members](swarm.md#members))
 
 **Limits are soft stopping rules; arms are compared on realized cost.** Inspect checks limits before and after calls and reserves nothing for calls in flight, so any cap is overshot by the calls in flight. The design does not plan on making limits hard. Instead:
@@ -57,7 +57,7 @@ A swarm of one member with no channels is a single agent with the same accountin
 **Default final answer for leaderless swarms: `verify`, else `vote`, else `first`.** Use the task's in-loop verifier when it has one, otherwise vote when answers are comparable, otherwise take the first submission. Every member's submission is recorded regardless. For shared-artifact tasks the result is the drained environment. M1 builds `first` only; the chain comes after M2 (decision: Ransom, 2026-10-08). ([Final answer](swarm.md#controller-topology-termination-final-answer))
 
 **Members share the sample's sandbox by default.** The filesystem is M1's only channel, and bridged members already run there.
-- A sandbox per member, or partial isolation, is optional later work. Possible reasons: isolation matching the epochs arm, or containment baselines.
+- A sandbox per member is an opt-in in M2; partial isolation is optional later work. Possible reasons: isolation matching the epochs arm, or containment baselines.
 - Concurrent edits, git index locks and resource contention in a shared sandbox are handled by the task's layout: per-member worktrees or scratch directories, and a sandbox sized for the members.
 ([Sandbox topology](swarm.md#sandbox-topology))
 
@@ -67,14 +67,14 @@ A swarm of one member with no channels is a single agent with the same accountin
 
 **Monitoring aligns with inspect_sentinel.** There is no separate swarm monitor type.
 - A send is a tool call, so sentinel's tool stages see it with the sender's identity, and sentinel's per-sample state gives monitors a joint view of the swarm.
-- M2 uses sentinel directly if its dispatcher has reached inspect_ai `main`, otherwise a minimal hook in sentinel's action vocabulary.
+- Sentinel's dispatcher has reached inspect_ai `main`, but its tool stages still skip bridged agents, so M2 also builds a minimal hook in sentinel's action vocabulary on the bus ([decisions](swarm-implementation-plan.md#decisions), item 5).
 ([The bus](swarm.md#the-bus-one-interception-point))
 
 **Peer messages are model output, delivered as tool output with distinct provenance.** By default a peer's text reaches a member only as the result of a swarm tool (`read_messages()` and the like), never as a user-role message. That is the default, not an absolute (decision: Ransom, 2026-10-09): after M2 an arm may opt into injection, below.
 - Inside the tool result each message is fenced as data under a sender line the bus stamps, and carries only what the sender wrote, never its tool calls or transcript. Tool output alone is not a trust boundary.
 - At a turn boundary the swarm injects at most a metadata-only notice, such as "3 unread from `worker-2`", as deepagent does for background completions.
 - Logs and evidence mark peer content and notices distinctly, preferring metadata to a new `source` value.
-- The notice is a marked message appended by a swarm `on_continue` hook; the swarm never posts into members' agent channels, so M2 needs no inspect_ai change beyond the registry types ([swarm-communication.md](swarm-communication.md)).
+- The notice is a marked message appended by a swarm `on_continue` hook; the swarm never posts into members' agent channels, so communication needs no inspect_ai change beyond the registry types ([swarm-communication.md](swarm-communication.md)). M2's one inspect_ai change is the scoped owner for `background()`.
 - Vendor swarms such as Codex deliver peer text in the user role; native members do only in an opt-in arm.
 - **Push after M2, optional and off by default**, each a logged ablation axis: reminders that repeat the notice while messages stay unread; injection of the fenced bodies as a marked user-role message (`delivery="inject"`), a deliberately weaker boundary offered for experiments; and urgent messages that interrupt a recipient blocked in a long call, which need a small inspect_ai change (a `Steer` agent-channel item) ([push delivery](swarm-communication.md#push-delivery-after-m2-optional)).
 ([Delivery](swarm.md#delivery-peer-messages-are-model-output))
@@ -96,7 +96,7 @@ A swarm of one member with no channels is a single agent with the same accountin
 | Repository | What |
 |---|---|
 | **inspect_swarm** | `swarm()`, controller, members, budget and ledger, bus and channels, evidence, metrics, scorers, prompts, Scout scanners |
-| **inspect_ai** | Only where needed: the `swarm_controller` and `swarm_channel` registry types (before M1), a tool-state scope for members (before M1), a scoped owner for `background()`, clean `react()` re-entry, per-span usage, a `Steer` agent-channel item (only for optional urgent messages after M2) |
+| **inspect_ai** | Only where needed: the `swarm_controller` and `swarm_channel` registry types (before M1), a tool-state scope for members (before M1), a scoped owner for `background()` (M2), clean `react()` re-entry, per-span usage, a `Steer` agent-channel item (only for optional urgent messages after M2) |
 | **inspect_swe** | Enabling and mapping Codex multi-agent v2 and Claude Code agent teams |
 | **inspect_sentinel** | Monitors and protocols |
 | **ORBIT-like packages** | Scenarios, attacks, defenses |
@@ -105,10 +105,10 @@ Detail: [where each part lives](swarm.md#where-each-part-lives).
 
 ## Plan
 
-M1, then M2; after that, a menu in any order or in part, driven by user feedback with no internal evidence gate. Milestones redefined 2026-10-13 (decision: Ransom); [swarm-implementation-plan.md](swarm-implementation-plan.md) breaks each into pull requests, with their dependencies and the design sections each implements.
+M1, then M2; after that, a menu in any order or in part, driven by user feedback with no internal evidence gate. Milestones defined by their audiences (decision: Ransom, 2026-10-13); [swarm-implementation-plan.md](swarm-implementation-plan.md) breaks each into pull requests, with their dependencies and the design sections each implements.
 
 - **M1: ready for first internal usage.** The leaderless filesystem swarm with full accounting: the `swarm()` API with `@swarm_controller` and `@swarm_channel`, shared sandbox, per-member tool state, cap and ledger, drain, the final answer `first` with every member's submission recorded, `InfoEvent` evidence and metrics, with a simple critical path (steps to the answer, longest member). Existing task scorers score it unchanged. Its inspect_ai changes land first: a one-line PR adding two registry types (decision: Ransom, 2026-10-08) and the tool-state scope (decision: Ransom, 2026-10-09).
-- **M2: ready for external usage**, measured by whether Epoch's LeanOpenProblems swarm could port to it and gain ([swarm-lean-open-problems.md](swarm-lean-open-problems.md)): per-member sandboxes, background deepagent members (an inspect_ai scoped owner for `background()`), custom limits that end only the member, budget visibility for members, gate-check metrics, a shared-memory channel through the bus, and user docs, examples, an API statement and a first release. The port keeps its own scorer. Direct messages (the previous M2) and scoring beyond `first` (the result contract, per-member scores, `baseline()` and the comparisons with epochs) are later work (decision: Ransom, 2026-10-14; [decisions](swarm-implementation-plan.md#decisions)).
+- **M2: ready for external usage**, measured by whether Epoch's LeanOpenProblems swarm could port to it and gain ([swarm-lean-open-problems.md](swarm-lean-open-problems.md)): per-member sandboxes, background deepagent members (an inspect_ai scoped owner for `background()`), custom limits that end only the member, budget visibility for members, gate-check metrics, a shared-memory channel through the bus, and user docs, examples, an API statement and a first release. The port keeps its own scorer. Direct messages and scoring beyond `first` (the result contract, per-member scores, `baseline()` and the comparisons with epochs) are later work (decision: Ransom, 2026-10-14; [decisions](swarm-implementation-plan.md#decisions)).
 - **Later, any order:** [future work](swarm-implementation-plan.md#future-work).
 
 ## Open
