@@ -1,6 +1,6 @@
 import logging
 import math
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Sequence, Set
 from contextvars import ContextVar
 from dataclasses import dataclass, field
 from typing import Literal
@@ -179,8 +179,14 @@ def _check_explicit(kind: str, cap: float, sample: Limit) -> None:
         )
 
 
-def check_cost_data(models: Sequence[str | Model]) -> None:
-    # run at swarm start when a cost cap applies, as Inspect does for the task's models
+def check_cost_data(
+    models: Sequence[str | Model], *, built: Set[str] = frozenset()
+) -> None:
+    # run at swarm start when a cost cap applies, as Inspect does for the task's models.
+    # The lookup is the one metering uses at generation time, cached by the model's
+    # string, so the check and the price charged agree. Two configurations that share
+    # a model string share that cached price, as they do under Inspect's cost_limit.
+    # `built` names the models of built members, known only by their logged name.
     missing = list(
         dict.fromkeys(
             str(model)
@@ -189,8 +195,11 @@ def check_cost_data(models: Sequence[str | Model]) -> None:
         )
     )
     if missing:
+        remedy = "Use set_model_cost() or --model-cost-config to configure pricing."
+        if any(name in built for name in missing):
+            remedy += " A built member's model is looked up by its name alone; to look it up as configured, use the member's factory form, member(factory, args={'model': ...})."
         raise PrerequisiteError(
-            f"A swarm cost cap requires cost data for every member's model. Missing cost data for: {', '.join(missing)}. Use set_model_cost() or --model-cost-config to configure pricing."
+            f"A swarm cost cap requires cost data for every member's model. Missing cost data for: {', '.join(missing)}. {remedy}"
         )
 
 
@@ -209,7 +218,6 @@ def is_bridged(agent: Agent, bridged: bool | None) -> bool:
 class MemberContext:
     name: str
     bridged: bool
-    stop_swarm: Callable[[str], None]
     scope: anyio.CancelScope = field(default_factory=anyio.CancelScope)
     stop_cause: str | None = None
     # counted as native, but found bridged at its first marked bridge generation
@@ -229,6 +237,8 @@ class SwarmNode(Limit):
     # the member that owns this node, or None for the swarm's shared nodes
     owner: str | None
     role: NodeRole
+    # set by the runtime on the swarm's caps
+    stop_swarm: Callable[[str], None] | None = None
 
     def detect_bridge(self) -> None:
         # every check, met or not, so a member found bridged by the bridge's mark stays
@@ -248,14 +258,16 @@ class SwarmNode(Limit):
         reason: str | None = None,
     ) -> None:
         self.detect_bridge()
+        if self.stop_swarm is not None:
+            # here rather than where the error is caught: a tool or handoff may turn
+            # it into a message, and its caller go on or return normally
+            self.stop_swarm("swarm_cap")
         member = current_member.get()
         if member is not None and member.bridged:
             # a raise here would reach the sandbox service and end the sample
             if member.stop_cause is None:
                 member.stop_cause = self._stop_cause(type)
             member.scope.cancel()
-            if self.role == "cap":
-                member.stop_swarm("swarm_cap")
             return
         raise LimitExceededError(
             type,
