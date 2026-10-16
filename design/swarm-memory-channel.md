@@ -1,6 +1,6 @@
 # Inspect Swarm: the shared-memory channel
 
-Status: proposed, 2026-10-14. Issue: none. Author: agent (Claude), reviewed by Codex; see the PR.
+Status: proposed, 2026-10-14; amended 2026-10-15 and 2026-10-16 (#23): no `exposed` evidence; a view is identified by its `read` event, and swarm metadata on read results is left to the ORBIT port. Issue: none. Author: agent (Claude), reviewed by Codex; see the PR.
 
 ## Overview
 
@@ -26,7 +26,7 @@ Goals:
 
 - A `@swarm_channel` factory with memory's command set over per-run channel state, routed through the bus, with plain-value configuration that logs faithfully.
 - The write record, fencing of reads, notices, and the semantics of `create`, `delete`, `rename`, `str_replace` and concurrent writes, each with its reason.
-- A decision on descendant access, with its binding rule, attribution to member and loop, and the meaning of `read` and `exposed` evidence with several readers per member.
+- A decision on descendant access, with its binding rule, attribution to member and loop, and the meaning of `read` evidence with several readers per member.
 - The evidence the dependency-linked critical path needs, so it can be built later without changing the bus.
 - Storm controls and a read budget under which every accepted file is viewable whole.
 - How it relates to `memory(instance=...)` and how a task migrates.
@@ -81,7 +81,7 @@ All in `src/inspect_ai/tool/_tools/_memory.py`.
 - `Record` with `channel`, `kind`, `origin`, `sender`, `to`, `recipients`, `payload`, `op`, `sender_span_id` and `tool_span_id` ([Records and the bus](swarm-communication.md#records-and-the-bus)); `Bus.deliver()` with step 0 (bind, resolve addresses, `validate()`), step 1 (the policy, the only `await`), step 2 (liveness and storm checks), step 3 (`sent` evidence) and step 4 (`apply()`, `delivered`), with steps 2 to 4 synchronous.
 - `Channel.name`, `prefix`, `check(roster)` and `open(run)`, and a per-run `ChannelState` with `tools()`, `validate()`, `apply()`, `notice_lines()` and `quiescent()`; compare-and-swap described as `apply()` failing the send when the version differs ([How channels plug into the bus](swarm-communication.md#how-channels-plug-into-the-bus)).
 - The binding rule: `swarm_tools()` binds the member to the first agent channel it is resolved in, returns no tools in any other agent channel, and notices go only to that loop; D-1 decides whether the shared memory changes this ([Members and identity](swarm-communication.md#members-and-identity)).
-- The shared fence, marker removal for `<peer_message`, notices with fixed templates and swarm-assigned ids, `read` and post-hoc `exposed` evidence matched by tool call id ([Fencing](swarm-communication.md#fencing), [Notices](swarm-communication.md#notices), [Evidence and provenance](swarm-communication.md#evidence-and-provenance)).
+- The shared fence, marker removal for `<peer_message`, notices with fixed templates and swarm-assigned ids, and `read` evidence ([Fencing](swarm-communication.md#fencing), [Notices](swarm-communication.md#notices), [Evidence and provenance](swarm-communication.md#evidence-and-provenance)). The post-hoc `exposed` evidence the merged design relied on was dropped in #23 ([swarm-communication.md Alternatives considered](swarm-communication.md#alternatives-considered)).
 
 None of the bus is built yet; the inspect_ai registry types it needs are on `main` (`src/inspect_ai/_util/registry.py:62-63`), and the tool-state scope (AI-2) is not.
 
@@ -183,7 +183,7 @@ Each write is one `Record` ([swarm-communication.md Records and the bus](swarm-c
 
 - `channel="shared_memory"`, `kind` the command (`"create"`, `"str_replace"`, `"insert"`, `"delete"`, `"rename"`), `origin="member"`, `sender` the member from the ContextVar, `via="tool"`, `wake=False`, `reply_to=None`.
 - `to=()` and `recipients=()`: a board write is a change to shared state, not a delivery, so it has no addresses ([Changes to the bus](#changes-to-the-bus)).
-- `sender_span_id` is the writing loop's agent span and `tool_span_id` the tool span holding its `ToolEvent`; together they attribute the write to the member and to the loop that made it.
+- `sender_span_id` is the writing loop's agent span and `tool_span_id` the tool span the write ran in; together they attribute the write to the member and to the loop that made it.
 - `payload` is the text the model wrote that enters the board: `file_text` for create, `new_str` for str_replace, `insert_text` for insert, empty for delete and rename. It is what the policy's `modify` replaces, and it is cleaned of fence markers before it is stored or recorded.
 - `op` is the operation, computed by the tool against the board when it is called:
 
@@ -267,11 +267,10 @@ A directory view lists, inside `<peer_listing path="/shared_memory/notes">`, one
 - **Rate and limits are the member's.** A member's 64 children share its `rate`, so descendants cannot multiply one member's write volume.
 - **Supported shapes.** Members whose top loop is `react()` or `deepagent()`, and their `general()` children (deepagent's only nested loops that inherit tools), are the shapes this is designed and tested for. A custom agent that runs nested work outside agent spans makes all its calls look like one loop; its writes are still attributed to the member, and the shared `seen` only makes the rule more permissive for it. Bridged members are refused (M2-6).
 
-**With several readers per member, `read` and `exposed` mean:**
+**With several readers per member, `read` means:**
 
-- `read`: a loop was shown a file version (or a listing). Each has its own event in that loop's tool span, with the loop's span.
-- `exposed`: that loop's model received the read's result: the first `ModelEvent` **of the reading loop**, after the `read` event, whose input holds a `ChatMessageTool` with the read's tool call id and `function == "shared_memory"`. A `ModelEvent` belongs to a loop when the loop's agent span is its nearest enclosing agent span; the finalisation walk goes through the member's span subtree, where every loop's span is ([How descendants reach a member's tools](#how-descendants-reach-a-members-tools)), to find the loop the `read` names, and matches only that loop's events. Matching anywhere in the subtree would be wrong: tool call ids are only unique within one conversation. Inspect keeps the provider's id (`src/inspect_ai/model/_call_tools.py:412-416`), and some providers fall back to positional ids such as `tool_call_0_1` when a call has none (`src/inspect_ai/model/_providers/groq.py:696`, `azureai.py:741`), so a parent and its child, or two sibling children, can hold the same id, and the parent's earlier result could otherwise be taken for the child's read. The same scoping applies to finding a write's proposing `ModelEvent` ([Evidence](#evidence)).
-- **The member is exposed** to a write when any of its loops is. A child's exposure does not put the content in its parent's context; it reaches the parent only through the child's result, which analysis follows through the child's span. The `nested` flag lets an analysis count top-loop exposure alone where that is the question.
+- `read`: a loop was shown a file version (or a listing). Each has its own event in that loop's tool span, with the loop's span, so the evidence says which loop was shown which version. The result message carries no swarm metadata in M2 ([swarm-communication.md Records and the bus](swarm-communication.md#records-and-the-bus), "Records in model input"). Joining a view to a particular generation's input goes through its tool call id within that loop, and tool call ids can repeat within one loop as well as across loops (Inspect keeps the provider's id, `src/inspect_ai/model/_call_tools.py:412-416`, and some providers fall back to positional ids such as `tool_call_0_1`, `src/inspect_ai/model/_providers/groq.py:696`, `azureai.py:741`). No M2 use needs that join: the critical-path edges and the metrics read the events. An exact join for ORBIT's exposure observer is part of the ORBIT port ([swarm-orbit.md P2](swarm-orbit.md#p2-bus-extensions)).
+- **The member has read** a write when any of its loops has. A child's read does not put the content in its parent's context; it reaches the parent only through the child's result, which analysis follows through the child's span. The `nested` flag lets an analysis count top-loop reads alone where that is the question.
 
 **Checked against the member contract and the tool-state scope.** The factory-form member design builds each member's agent from its factory in the member's task, once per member per sample ([swarm-api.md The member contract](swarm-api.md#the-member-contract)); `swarm_tools()` holds no state and its tools come from the run's `SharedMemoryState` at resolution, so a factory-built agent, a built agent shared by samples, and a `swarm_tools()` object passed in `args` all reach the right run and member. The board lives on the bus, not in the sample store, so the tool-state scope does not apply to it, and a member's `memory()` at the default instance stays private to it under the scope as decided ([swarm.md Members](swarm.md#members)); the scope, too, is a ContextVar entered in the member's task, which children inherit as the spike shows for the member's.
 
@@ -283,18 +282,17 @@ Evidence follows [swarm-communication.md Evidence and provenance](swarm-communic
 |---|---|---|---|
 | `sent` | step 3, every write that reached the bus | writer's tool span | the full record (kind, op with `files`, payload, both span ids); `decision`; the rejecting control and reason, if rejected; `original_payload` when modified |
 | `delivered` | step 4 | writer's tool span | record id; `seq`, the commit sequence number; the applied `files` (`file`, `path`, `base`, `version`, `deleted`); `notify` (running members to whose top loop the write is news, the writing member included when a child of it wrote) |
-| `read` | a `view` returns | reader's tool span | `files`: `[{"file", "version", "record", "lines", "deleted"}]` (the last writer's record, the line range if any, and whether a tombstone was shown); `listing: true` for a directory view, with every listed file's id and version; `tool_span_id`; `loop` and `nested` |
-| `notified` | a notice line is added | the member's top loop span | notice id, file ids and versions |
-| `exposed` | post hoc, at finalisation | swarm span | the read's files, reader, `loop`, `nested`, the `ModelEvent` id, `certainty: "exact"` |
+| `read` | a `view` returns | reader's tool span | the read id; `files`: `[{"file", "version", "record", "lines", "deleted"}]` (the last writer's record, the line range if any, and whether a tombstone was shown); `listing: true` for a directory view, with every listed file's id and version; `tool_span_id`; `loop` and `nested` |
+| `notified` | a notice line is added | the member's top loop span | notice id, the notice message's id, file ids and versions |
 
 Common fields add `loop` (the agent span id of the loop that acted) and `nested` to comm's `member` and `span_id`.
 
 **What the dependency-linked critical path needs**, all present above, so the later metric is built over this evidence without changing it:
 
-- **Each write attributed to its member and its step.** `sent` and `delivered` carry the member and the writing loop; the `tool_span_id` holds the `ToolEvent` whose call id identifies, among the writing loop's own `ModelEvent`s, the one whose output proposed the write, which is the writer's step.
+- **Each write attributed to its member and its step.** `sent` and `delivered` carry the member, the writing loop and the write's tool span. The write's step is its commit, the `delivered` event, written in the tool span of the call that made it; analysis that wants the generation that proposed the call finds it from that span in the Inspect log.
 - **The lineage of every version.** `delivered.files` gives, for every file a write touched, the `base` it was applied to and the `version` it produced, so analysis knows which writes a shown version contains: the write that produced it and, transitively through `base`, every earlier write since the file was created (renames keep the id; a delete ends the chain with a tombstone version).
-- **Reads of another member's writes as `exposed`.** `read` names the version shown and its last record; `exposed` names the `ModelEvent` at which the reading loop's model received it, exactly. A cross-member edge runs from the proposing step of each write in the shown version's lineage by another member to the exposing step of the reader. Listings are recorded separately (`listing: true`) because they show paths, not content; whether a listing makes an edge is the metric's choice.
-- **Order.** Writes are totally ordered by `delivered.seq`, not by record id ([Concurrency](#concurrency-and-compare-and-swap)); reads and exposures are ordered by event time within the transcript. Replaying the applied writes in `seq` order reproduces every version of the board.
+- **Reads of another member's writes.** `read` names the version shown and its last record, in the reader's tool span, which identifies the reader's step. A cross-member edge runs from the `delivered` event of each write in the shown version's lineage by another member to the reader's `read`. Listings are recorded separately (`listing: true`) because they show paths, not content; whether a listing makes an edge is the metric's choice.
+- **Order.** Writes are totally ordered by `delivered.seq`, not by record id ([Concurrency](#concurrency-and-compare-and-swap)); reads are ordered by event time within the transcript. Replaying the applied writes in `seq` order reproduces every version of the board.
 
 A partial view (`view_range`) depends on part of a version only; the evidence records the range, and treating it as the whole version over-approximates the edge, which is the conservative direction for a critical path.
 
@@ -368,7 +366,7 @@ And one on `Channel`: the `reach` class attribute of [Descendants](#descendants)
 
 ## Compatibility and migration
 
-- **inspect_ai:** no change. The channel uses `current_agent_span_id()` and the private names the bus already uses (`current_agent_channel`, `sample_active`), which the standing decision allows. The registry types are on `main`.
+- **inspect_ai:** none. The channel uses `current_agent_span_id()` and the private names the bus already uses (`current_agent_channel`, `sample_active`), which the standing decision allows. The registry types are on `main`.
 - **Eval logs:** only existing types. Evidence is versioned `InfoEvent`s; notices are `ChatMessageUser` with metadata, as swarm-communication.md specifies. No schema or generated-type change.
 - **inspect_swarm API (unreleased):** the `shared_memory()` factory and its registry name, the `shared_memory` tool's name, parameters and texts, the `reach` attribute on `Channel`, `admit()` on `ChannelState`, and unaddressed records. The tool and its texts are part of the evaluated surface: changing them changes model behaviour, so a change bumps the evidence `version`, as for messages.
 - **Tasks using `memory(instance=...)`:** unaffected; migration is opt-in ([Relation to `memory(instance="...")`](#relation-to-memoryinstance)).
@@ -386,7 +384,7 @@ Untrusted input reaching this code, and how it is handled:
 - **Volume:** per-member write rate (all loops together), per-file and per-board caps, and a read budget that admits every file whole, so no result exceeds its budget and no truncation cuts a fence.
 - **Isolation between samples:** the board, ids, `seen` and `covered` are per run on the bus; the shared `Channel` holds configuration only.
 - **Instructions and notices** are fixed templates with counts, ids and roster names, which `check(roster)` validates at construction.
-- **Exposure evidence** is matched by tool call id, so fence text that content or another tool reproduces cannot create a false exposure.
+- **Read identity** is the `read` event, written from bus state (read, file and record ids and versions), never from a payload, so fence text that content or another tool reproduces cannot make a message look like a view to analysis that joins by the event.
 - **Containment is unchanged:** members with a shared sandbox or other shared tool state can still communicate outside the board ([swarm-communication.md The filesystem channel](swarm-communication.md#the-filesystem-channel)).
 
 ## Testing
@@ -399,27 +397,23 @@ All tests use mockllm with scripted tool calls, run on asyncio and trio, and nee
 - **Fencing and budget**: a file of `max_file_bytes` four-byte characters, and one of `max_file_lines` empty lines, each viewed whole within the computed budget under a generate config with a small `max_tool_output`; a full listing of `max_files` longest paths within the budget; marker removal on payload, on a str_replace that assembles `<peer_file` across old and new text, on `<peer_message` text, and nested fragments; the fence's attributes for writer, version and record after edits by two members; storm controls at and over each threshold, rejected with `sent` evidence.
 - **Descendants** (in `tests/test_binding.py` with M2-7, using a test channel with `reach="member"` and one with `"loop"`; and here with this channel): a `deepagent()` member's synchronous `general()` child gets the member-reach tool and not the loop-reach one, writes as the member with its own span and `nested: true`, and its rate counts against the member; the binding and notices stay on the top loop; the child's status line reports peers' changes; a child's write, and a child's delete of a file the parent had seen, each list the parent in `delivered.notify` and reach the parent's next notice, while the parent's own top-loop writes do not list it. A background `general()` child does the same, `delivered.notify` included, in a test that lands with whichever of M2-5 and M2-8 merges second.
 - **Notices** (with M2-9): notice text holds ids, markers and roster names only, never a path or content, with a path chosen to look like an instruction; one notice per new version; deletions marked and one-shot (a covered tombstone never reappears in a notice); a peer's file created and deleted before the member heard of it is not reported; a `general()` child that deletes the board's last file makes the deletion news to its parent, attributed to the child's loop; the status line keeps listing a deleted file until the loop views its id, and then drops it; the ten-id cap.
-- **Evidence** (`tests/test_comm_evidence.py`, with M2-10): `sent` with op `files` and both span ids for each command; `delivered` with `seq` and the applied `files`, including a str_replace rebased onto a newer version; `read` with version, record and range, and a tombstone read; `exposed` names the first `ModelEvent` of the reading loop after the read holding the read's tool call id, scripted so that the same tool call id is reused by a parent and its child (with the parent's result earlier than the child's read) and by two sibling children, each matched in its own loop; unaffected by the same fence text placed in the task input and another tool's result; replaying applied writes in `seq` order reproduces the final board exactly.
+- **Evidence** (`tests/test_comm_evidence.py`, with M2-8): `sent` with op `files` and both span ids for each command; `delivered` with `seq` and the applied `files`, including a str_replace rebased onto a newer version; `read` with its read id, version, record and range, and a tombstone read; replaying applied writes in `seq` order reproduces the final board exactly. Two concurrent views in one batch, and a parent's and a child's views under one tool call id, each get their own `read` event with their own `loop`; a listing's `read` lists every listed file's id and version; a refused view (`ToolError`) and a write write no `read` event; the same fence text placed in the task input and in another tool's result writes none.
 - **Fence module** (`tests/test_fence.py`): marker removal over every registered tag, repeated until none remain; budget arithmetic.
 
 ## Implementation plan
 
-The plan's M2-7 and M2-8 carry this design, after M2-6; notices and exposure for the channel land with M2-9 and M2-10 as planned.
+The plan's M2-7 and M2-8 carry this design, after M2-6; notices for the channel land with M2-9 as planned, and its communication metrics with M2-10.
 
 1. **M2-6 (bus core), with the bus refinements** of [Changes to the bus](#changes-to-the-bus): unaddressed records, sender liveness at step 2, `ChannelState.admit()`, and the commit sequence with `apply()`'s result in `delivered`. Files as M2-6 lists (`_bus/_bus.py`, `_bus/_record.py`, `_channel/_channel.py`). Tests in `tests/test_bus.py` with a test channel: an unaddressed record applies with no recipients; an `admit()` refusal is evidenced in `sent` and leaves state unchanged; a sender that ends during the policy is rejected at step 2; two records whose policies complete in the reverse of their id order get `seq` in commit order.
 2. **M2-7 (member binding), with `reach`.** `Channel.reach` in `_channel/_channel.py`; `swarm_tools()` in `_bus/_tools.py` returns `"member"`-reach tools in non-bound agent channels. Tests: the descendant cases above in `tests/test_binding.py`, with test channels.
 3. **M2-8 (the shared-memory channel).** `src/inspect_swarm/_channel/shared_memory.py` (the factory, validation, `check()`, `instructions()`, `SharedMemoryState` with `tools()`, `validate()`, `admit()`, `apply()`, `notice_lines()`, the path grammar, the tool and its texts, the read budget); `src/inspect_swarm/_fence.py` (envelope rendering, the tag list, marker removal); `read` evidence in `_evidence.py`; `shared_memory` exported from `src/inspect_swarm/__init__.py` and imported by `src/inspect_swarm/_entrypoint.py`. Tests: `tests/test_shared_memory_channel.py`, `tests/test_shared_memory.py`, `tests/test_fence.py`, the synchronous-child case, and the background-child case if M2-5 has merged.
 4. **M2-9 (notices)** exercises the channel's `notice_lines()` as planned; its tests add the cases under Notices above.
-5. **M2-10 (exposure)** walks the member's span subtree to find each read's loop and matches only that loop's `ModelEvent`s after the read, so children's reads are matched and reused tool call ids are not confused, and writes `loop` and `nested`; its tests add the Evidence cases above. Communication metrics count writes and rejections per member and per control.
+5. **M2-10 (communication metrics)** counts writes, views and rejections per member and per control.
 6. **M2-11 (docs)** documents the channel, migration from `memory(instance=...)`, the seen rule, descendants, and that bridged members cannot use it yet; the example shaped like Epoch's port uses it.
 
 ### Changes to other designs and the plan
 
-Follow-ups, not edits made here:
-
-- **swarm-implementation-plan.md.** M2-6 gains the four bus refinements and their tests. M2-7 gains `Channel.reach` and the member-reach rule in `swarm_tools()`; its "descendant cases D-1 decides" are those under Testing. M2-8's file name is `_channel/shared_memory.py`, its tests as listed; the plan's own statement about the background-child test stands. M2-10's exposure walk finds the reading loop in the member's span subtree and matches within that loop only. The Future-work item for the dependency-linked critical path can cite [Evidence](#evidence).
-- **swarm-communication.md.** [Members and identity](swarm-communication.md#members-and-identity): the `reach` exception. [Records and the bus](swarm-communication.md#records-and-the-bus): unaddressed records, sender liveness at step 2, and the commit sequence in `delivered` (record ids are attempt ids). [How channels plug into the bus](swarm-communication.md#how-channels-plug-into-the-bus): `admit()`, with compare-and-swap moved there from `apply()`, and `reach`; its "a note is a record with recipients `all`" becomes an unaddressed record when notes are built. [Fencing](swarm-communication.md#fencing): marker removal covers every channel's tags. [Evidence and provenance](swarm-communication.md#evidence-and-provenance): an exact native match is within the reading loop, since tool call ids are unique only within a conversation.
-- **swarm-lean-open-problems.md.** The port sketch's channel becomes `shared_memory` per [Relation to `memory(instance="...")`](#relation-to-memoryinstance), with M2-11's example.
+Applied on 2026-10-14 in #23: the plan's M2-6 to M2-10, swarm-communication.md, the Lean port sketch, and the other designs' references to this one now match this design.
 
 ## Open questions
 
