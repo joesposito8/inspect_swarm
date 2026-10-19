@@ -229,7 +229,7 @@ The critical path is AI-1 → M1-1 → M1-3 → M1-4 → M1-5 → M1-7 → M1-13
 - Implements: [swarm-limits.md](swarm-limits.md#implementation-plan) step 4, [The ledger](swarm-limits.md#the-ledger); [swarm.md Accounting](swarm.md#observer-evidence-accounting-and-metrics).
 
 **M1-7. Exhaustion and the final step.** M1-4 already supplies recovery from the swarm's own caps (the cap node begins the stop and the member wrapper records `swarm_cap`, `src/inspect_swarm/_member.py`, `run_member()`) and propagation with the swarm's own errors removed from mixed groups (`classify_errors()`, in the wrapper and for the controller's `run` in `src/inspect_swarm/_controller/_control.py`). What is left for M1-7: the synchronous `finally` that writes the ledger and the output on every exit path, including cancellation from outside; the guarantee that the ledger and the provisional answer survive a sample limit; and the final meter around finalisation and the provisional answer.
-- Files: `src/inspect_swarm/_swarm.py`, `src/inspect_swarm/_final.py`.
+- Files: `src/inspect_swarm/_controller/_control.py`, `src/inspect_swarm/_ledger.py`, `src/inspect_swarm/_member.py`.
 - Tests: the exhaustion cases of `tests/test_swarm_limits.py`, including that a sample time limit leaves the ledger and the provisional answer written.
 - Depends on: M1-5 (the finalisation it wraps) and M1-6 (the ledger its tests check). This runs swarm-limits.md's steps 3 and 4 in the other order, so that step 3's test of the ledger surviving a sample limit lands with it.
 - Implements: [swarm-limits.md](swarm-limits.md#implementation-plan) step 3, [Exhaustion and errors](swarm-limits.md#exhaustion-and-errors), [The final step and the reserve](swarm-limits.md#the-final-step-and-the-reserve).
