@@ -398,7 +398,7 @@ class Meter(BaseModel):
 class Calls(BaseModel):        # counted from ModelEvents
     calls: int                 # completed, non-cache model calls
     cache_replays: int         # events with cache="read": charged zero
-    errored: int               # attempts that ended in an error, cancellation included: usage unknown
+    errored: int               # attempts that ended in an error, cancellation included, and retries inside a call: usage unknown
     no_usage: int              # completed with output but no usage
     unpriced: int              # completed with usage whose total_cost is None
 
@@ -449,6 +449,7 @@ Sources and coverage:
   - The token-tree node's own per-call count (`unpriced_calls_recorded`, taken in `record()` before aggregation) and `unpriced_models` (models whose sample delta has tokens but no cost) are kept as cross-checks.
   - **Errored and usage-less calls:**
     - `errored` counts every non-cache attempt whose event ended with an `error`. That includes Inspect's cancellation (`_model.py:1666-1674`), attempt and stream-idle timeouts (`_model.py:1641-1650`), transport and SDK timeouts, errors after streaming began (`src/inspect_ai/model/_openai.py:1562-1569` handles an SDK error after HTTP 200), and provider error responses, whether or not a retry later succeeded (`_model.py:1652-1657`).
+    - It also counts the requests a provider's client retried inside one call, which Inspect's HTTP hooks add to the event's `retries` (`log/_samples.py:781-786`). Each retry follows a failed request, and the event keeps the usage of only the last one.
     - None of these records usage, and the event keeps only an error string, not a status code (`event/_model.py:126`). So the ledger cannot tell a request the provider rejected before inference from one it ran and billed, and counts every errored attempt as unknown expenditure. There is no zero-spend exception, not even for rate-limit (HTTP 429) rejections.
     - A refusal at Inspect's own pre-dispatch check is not counted: it is raised before the event exists (`_model.py:1568-1570`) and sends nothing.
     - `no_usage` counts events completed with output but no usage (`_model.py:1733-1736`).
@@ -461,7 +462,7 @@ Sources and coverage:
   - If the list is empty, no native compaction could have run in the process during the interval. If it is not, completeness cannot be established, whether or not any compaction happened, and the total is a lower bound.
   - The one case outside this test is a `ModelAPI` subclass created dynamically (with no module keeping it alive), used and garbage-collected entirely within the interval. That is the claim's stated limit, as the filesystem observation limit is for communication ([Security](swarm.md#security)).
 - **The sample delta** is the sample's model usage at the end minus at the start. `unattributed` is what it holds beyond the swarm meter: the tokens of approval and review calls (their cost is in the meter, through the cost-tree node), plus anything that ran in the sample during the swarm outside its contexts.
-- **Totals per arm** stay as swarm.md set them: Inspect's sample `model_usage`, which every arm has. It includes the task's scorer calls, because it is read after scoring; M1 accepts that, since every arm is graded by the same scorers (decision: Ransom, 2026-10-08). The ledger is written when the swarm returns, before scoring, so its own figures (the meters and `sample_delta`) cover the solve only. When swarm-scoring.md's deferred cost boundary is built, arm totals move to its `solve_usage` ([swarm-scoring.md](swarm-scoring.md#the-cost-boundary-deferred)). The ledger reconciles with the sample's usage over its own interval: `unattributed` must not be negative in tokens or, beyond a relative tolerance of `1e-9` of the delta's cost, in cost. The tolerance absorbs summation order, since the sample sums per model and the meters sum per call. A negative remainder would mean the swarm counted a call twice, so the implementation logs an error and tests pin it.
+- **Totals per arm** stay as swarm.md set them: Inspect's sample `model_usage`, which every arm has. It includes the task's scorer calls, because it is read after scoring; M1 accepts that, since every arm is graded by the same scorers (decision: Ransom, 2026-10-08). The ledger is written when the swarm returns, before scoring, so its own figures (the meters and `sample_delta`) cover the solve only. When swarm-scoring.md's deferred cost boundary is built, arm totals move to its `solve_usage` ([swarm-scoring.md](swarm-scoring.md#the-cost-boundary-deferred)). The ledger reconciles with the sample's usage over its own interval: `unattributed` must not be negative in tokens or, beyond a tolerance of `1e-9` of the cumulative end cost of the models used in the interval, in cost. The tolerance is relative to the cumulative cost, not the delta's, because the delta is a difference of cumulative sums and carries their rounding error; it also absorbs summation order, since the sample sums per model and the meters sum per call. A negative remainder would mean the swarm counted a call twice, so the implementation logs an error and tests pin it.
 
 Claims. Completeness is judged over the whole interval the ledger covers (members, the runtime lever, the final step and any other call in the swarm's span), and is conservative where calls cannot be observed:
 
@@ -582,7 +583,9 @@ In every arm, analysis uses realized cost from the ledger and the sample, not th
   - `token_limit_tree.is_suspended()`;
   - `in_bridge_model_generate()`;
   - `_get_model_info_direct()`;
-  - `sample_active()`.
+  - `sample_active()`;
+  - `Transcript._subscribe()`, which the ledger uses to follow model events and spans live, so a call's final usage and price are read even when a bounded transcript has evicted the event;
+  - `_resume_checkpoint` on `sample_active().checkpointer`, which sets the ledger's `resumed`.
 
   This is allowed (decision: Ransom, 2026-10-07). They are pinned by tests in this repository ([Testing](#testing)), so an inspect_ai change that breaks them fails CI here.
 - **No inspect_ai changes for limits.** M1's two inspect_ai PRs, the registry types and the tool-state scope, come from swarm-api.md and swarm.md, not from this design. The bridge fix in [Alternatives](#alternatives-considered) and the two observability changes in [open question 3](#open-questions) are optional; the ledger's completeness rules relax as they land.
