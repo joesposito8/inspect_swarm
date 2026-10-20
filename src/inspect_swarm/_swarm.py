@@ -40,6 +40,8 @@ def swarm(
 ) -> Agent:
     """A swarm of agents working on one sample.
 
+    Each member gets a timeline in the sample named after it, so member names must be unique across the swarm runs and other timelines in a sample. To run swarms more than once in one sample, build them with distinct member names. A member may not be named `init`, `solvers` or `scorers`: Inspect's timelines read spans with those names as the sample's phases.
+
     Args:
         members: The roster: built agents or `member()` records. A bare agent is `member(agent)`. A factory-form `member()` may stand for several members (`count`).
         controller: How the swarm runs: who starts, when and with what input, and when the swarm is done. A name resolves to a registered controller with its default parameters.
@@ -51,11 +53,12 @@ def swarm(
 
     Raises:
         TypeError: If `members` holds a bare `@agent` factory, an ACP agent, or anything other than agents and `member()` records, or an argument has the wrong type.
-        ValueError: If member names collide, the same agent object is in two members, a channel is given twice, two channels share a record name or prefix, a name does not resolve, the controller or a channel refuses the roster, or a bridged member is in a swarm with a channel that has records (bridged members cannot use them yet).
+        ValueError: If member names collide, a member is named `init`, `solvers` or `scorers`, the same agent object is in two members, a channel is given twice, two channels share a record name or prefix, a name does not resolve, the controller or a channel refuses the roster, or a bridged member is in a swarm with a channel that has records (bridged members cannot use them yet); or, when the returned agent runs, if the sample already has a timeline named after one of its members.
     """
     records = _members(members)
     names = member_names(records)
     _check_distinct_agents(records, names)
+    _check_phase_names(names)
     roster = [
         MemberInfo(name=name, role=record.role)
         for record, record_names in zip(records, names, strict=True)
@@ -191,6 +194,18 @@ def _member(item: object) -> Member:
     raise TypeError(
         f"members= takes agents or member() records, got a {type(item).__name__}."
     )
+
+
+# span names Inspect's timeline_build() reads as the sample's phases, wherever they are
+_PHASE_NAMES = ("init", "solvers", "scorers")
+
+
+def _check_phase_names(names: Sequence[list[str]]) -> None:
+    for name in (name for record_names in names for name in record_names):
+        if name in _PHASE_NAMES:
+            raise ValueError(
+                f"members=: a member is named {name!r}, which Inspect's timelines read as a phase of the sample, so the member's timeline would lose its agents. Give the member another name with member(..., name=...)."
+            )
 
 
 def _check_distinct_agents(
