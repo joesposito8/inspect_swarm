@@ -20,6 +20,7 @@ from ._budget import (
     SwarmTokenNode,
     check_cost_data,
     derive_caps,
+    is_bridged,
     share_nodes,
 )
 from ._channel._channel import Channel
@@ -50,7 +51,7 @@ def swarm(
 
     Raises:
         TypeError: If `members` holds a bare `@agent` factory, an ACP agent, or anything other than agents and `member()` records, or an argument has the wrong type.
-        ValueError: If member names collide, the same agent object is in two members, a channel is given twice, a name does not resolve, or the controller refuses the roster.
+        ValueError: If member names collide, the same agent object is in two members, a channel is given twice, two channels share a record name or prefix, a name does not resolve, the controller or a channel refuses the roster, or a bridged member is in a swarm with a channel that has records (bridged members cannot use them yet).
     """
     records = _members(members)
     names = member_names(records)
@@ -65,6 +66,7 @@ def swarm(
     resolved_controller = resolve("swarm_controller", controller)
     if resolved_controller.check is not None:
         resolved_controller.check(roster)
+    _check_bus_channels(resolved_channels, records, names, roster)
     resolved_budget = _budget(budget)
     preambles = {
         info.name: _preamble(info, len(roster), resolved_channels) for info in roster
@@ -100,6 +102,7 @@ def swarm(
             grace=resolved_budget.grace,
             budget=resolved_budget,
             shares=share_nodes(resolved_budget, caps, [info.name for info in roster]),
+            channels=resolved_channels,
         ).run(resolved_controller.run)
         return state
 
@@ -216,6 +219,43 @@ def _channels(channels: str | Channel | Sequence[str | Channel]) -> list[Channel
             f"channels=: each channel may be given once; {', '.join(duplicates)} is given more than once."
         )
     return resolved
+
+
+def _check_bus_channels(
+    channels: Sequence[Channel],
+    records: Sequence[Member],
+    names: Sequence[list[str]],
+    roster: Sequence[MemberInfo],
+) -> None:
+    # channels with records must not collide, and bridged members have no way to their
+    # tools yet
+    for channel in channels:
+        if (channel.name is None) != (channel.prefix is None):
+            raise ValueError(
+                f"channels=: {registry_info(channel).name} must set both a record name and a record prefix, or neither."
+            )
+    for field in ("name", "prefix"):
+        seen: dict[str, str] = {}
+        for channel in channels:
+            value = getattr(channel, field)
+            if value is None:
+                continue
+            other = seen.setdefault(value, registry_info(channel).name)
+            if other != registry_info(channel).name:
+                raise ValueError(
+                    f"channels=: {other} and {registry_info(channel).name} both have the record {field} {value!r}, so their records would collide."
+                )
+    for channel in channels:
+        channel.check(roster)
+    bus_channels = [c for c in channels if c.name is not None]
+    if not bus_channels:
+        return
+    for record, record_names in zip(records, names, strict=True):
+        agent = record.agent if record.agent is not None else record.factory
+        if is_bridged(cast(Agent, agent), record.bridged):
+            raise ValueError(
+                f"swarm(): member {record_names[0]!r} is bridged, and bridged members cannot use bus channels such as {registry_info(bus_channels[0]).name} yet. Leave the channel out, or the member."
+            )
 
 
 def _budget(budget: object) -> Budget:
