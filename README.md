@@ -145,7 +145,7 @@ solver = swarm(
 
 `agent-1` and `agent-2` run in the environments of those names. The sample's sandbox configuration provides them (for Docker, a compose service for each), and the swarm checks that they exist when it starts.
 
-- When one member has its own sandbox, every member must have one, and no two can have the same one. The `filesystem` channel describes a shared sandbox, so it is refused: pass `channels=[]`. If the members' sandboxes each mount one shared volume, pass `channels=[filesystem(shared_volume=True)]` instead (see [Controllers and channels](#controllers-and-channels)).
+- When one member has its own sandbox, every member must have one, and no two can have the same one. The `filesystem` channel describes a shared sandbox, so it is refused: pass `channels=[]`, or `channels=[shared_memory()]` for a board the members share ([The shared-memory channel](#the-shared-memory-channel)). If the members' sandboxes each mount one shared volume, pass `channels=[filesystem(shared_volume=True)]` instead (see [Controllers and channels](#controllers-and-channels)).
 - A member cannot see the sample's other environments, except those in its `visible_sandboxes`, such as a shared service. It reaches those only by name. Any member that lists a service can use it, so list only services every member may use.
 - The task's scorer runs outside every member, where `sandbox()` is the sample's `default`. A scorer that grades the members' work names each member's sandbox, as in `sandbox("agent-1")`. The result record's `sandbox` field says which member used which.
 
@@ -177,7 +177,7 @@ A member's status says how it ended:
 
 `controller=` decides which members start and when the swarm is done. The only built-in controller is `leaderless`, the default. It starts every member with the sample's input and ends the swarm when all have ended.
 
-`channels=` decides how members share information. The only built-in channel is `filesystem`, the default. It adds no tools. It tells each member, in its preamble, to share files in `/shared`, to read and append to `/shared/notes.md`, and to keep its own work in `/scratch/<member>`. It does not create these directories. Change the paths with `filesystem(...)`:
+`channels=` decides how members share information. There are two built-in channels: `filesystem`, the default, and `shared_memory` ([The shared-memory channel](#the-shared-memory-channel)). `filesystem` adds no tools. It tells each member, in its preamble, to share files in `/shared`, to read and append to `/shared/notes.md`, and to keep its own work in `/scratch/<member>`. It does not create these directories. Change the paths with `filesystem(...)`:
 
 ```python
 from inspect_ai.agent import react
@@ -202,6 +202,35 @@ solver = swarm(
 `channels=[]` gives members no channel instructions. Members share the sample's sandbox whatever the channels, unless they have their own ([Sandboxes](#sandboxes)).
 
 You can write your own with `@swarm_controller` and `@swarm_channel`. See their docstrings.
+
+### The shared-memory channel
+
+`shared_memory()` gives the swarm one board of files that every member reads and writes with a `shared_memory` tool. The tool has the commands of Inspect's `memory()` tool, over files under `/shared_memory`. A view shows what other members wrote, marked as information from a peer, and each result names the files others have changed since the member last viewed them. Each sample has its own board, which is gone when the swarm ends.
+
+Members get the tool from `swarm_tools()`, which gives a member the tools of the swarm's channels. Put it in the member's tools, in the factory or the built form:
+
+```python
+from inspect_ai.agent import deepagent, react
+from inspect_ai.tool import bash
+
+from inspect_swarm import filesystem, member, shared_memory, swarm, swarm_tools
+
+solver = swarm(
+    members=[
+        member(react, args={"tools": [bash(), swarm_tools()]}, name="solver", count=3),
+        member(deepagent(tools=[bash(), swarm_tools()]), name="reviewer"),
+    ],
+    channels=[filesystem(), shared_memory()],
+)
+```
+
+Any agent that takes a `ToolSource` in its tools can take `swarm_tools()`. It gives no tools when the swarm has no channel with tools, or outside a swarm, so one member definition serves every arm of an experiment. A member's synchronous subagents that have the member's tools, such as `deepagent()`'s `general()` subagent, use the board as the member.
+
+This swarm keeps the `filesystem` channel beside the board. `channels=[shared_memory()]`, or `channels=["shared_memory"]`, replaces it: members still share the sample's sandbox, but their preamble no longer mentions `/shared`. Members with their own sandboxes can use the board with no shared volume. Bridged members cannot use the channel.
+
+The number and size of files and each member's write rate are limited. See `shared_memory()`'s docstring for the limits, their defaults and the rules members follow.
+
+The swarm logs the members' writes and views as `InfoEvent`s with source `inspect_swarm` and type `comm`, so the log keeps the board's whole history. The [metrics](#metrics-and-analysis) count these events for each member.
 
 ## Budget
 
@@ -255,6 +284,8 @@ When the swarm ends it writes two more store entries, each also logged as an `In
 
 - `inspect_swarm:ledger`: the swarm's accounting. Its budget, caps, the usage of each member, the controller and the final step, model calls that errored or reported no usage, unpriced models, what stopped the swarm, and whether the sample resumed from a checkpoint. See [The ledger](#the-ledger).
 - `inspect_swarm:metrics`: tokens, cost and wall-clock time for the swarm, and tokens, cost and running time for each member. Also members with no completed model call (`never_acted`), counts of completed model calls for the chosen member (`steps_to_answer`) and the busiest member (`longest_member_steps`), and the longest run of identical tool calls by each member (`null` for a bridged member, see [Restrictions](#restrictions)). These call counts include cache replays and exclude failed or cancelled attempts.
+
+Each member's metrics also have `comm`, by channel name, for each channel with records, such as `shared_memory`: `records` and `record_bytes`, its writes delivered to the channel and their size; `rejections`, its writes the bus refused, by the control that refused them, such as `rate`; and `reads` and `listings`, its views of files and of directories. A member's subagents count as the member. Every member has an entry for every such channel the swarm opened, zeros included. A swarm with none (`filesystem` only, or `channels=[]`) has `comm` `{}` for every member: communication through files is observed, not recorded, so it is not reported as zero.
 
 `inspect_swarm.analysis.SwarmColumns` adds each sample's realized cost and ledger data to Inspect's `samples_df()`. `samples_df()` needs pandas and pyarrow, which neither install above includes:
 
@@ -386,7 +417,7 @@ If an error, limit or cancellation escapes the swarm and ends the sample, the lo
 - **Tool state is per member.** Each member runs in its own tool-state scope. Built-in tools that keep state in the store (`memory()`, `bash_session()`, `web_browser()`, the skill tool) give each member its own state when their `instance` is left at the default.
   - Tool state that a setup solver prepared at the default instance is not carried into the members. They start with fresh state.
   - Tasks whose scorers read a member's tool state from the store are not supported. The keys inside a member's scope differ from the default ones.
-- **Memory is private by default.** The default `memory()`, and `deepagent()`'s memory, is private to each member. For a board members share, give the tool an explicit instance, as in `react(tools=[memory(instance="board")])`. A shared instance is a channel between members outside the swarm's channels: members' `ToolEvent`s record its use, and nothing else does.
+- **Memory is private by default.** The default `memory()`, and `deepagent()`'s memory, is private to each member. For a board members share, use the `shared_memory()` channel ([The shared-memory channel](#the-shared-memory-channel)): the swarm logs its writes and views as `comm` events and counts them in the metrics. A `memory()` tool with an explicit instance, as in `react(tools=[memory(instance="board")])`, is also shared. Such an instance is a channel between members outside the swarm's channels: members' `ToolEvent`s record its use, and nothing else does.
 - **Bridged members leave no tool events.** A bridged member runs a CLI agent in the sandbox through Inspect's agent bridge. `inspect_swe` agents count as bridged by default; pass `member(..., bridged=True)` for other agents that use the bridge. The CLI's own tool calls do not emit Inspect `ToolEvent`s, so the tool-event evidence described here does not cover them, and `longest_identical_tool_run` is `null` for bridged members.
 - **Shared files are observed, not audited.** Tool calls are evidence that members may have communicated through the filesystem, not a complete record. Processes a member starts in the sandbox can read and write files between logged tool calls, and after the member has ended. An experiment that attributes communication to the filesystem must state this limit, or add its own instrumentation, such as filesystem snapshots or audit logs in the sandbox.
 - **The result record belongs to the swarm.** Only the swarm writes `inspect_swarm:result`. Task code (tools, member builders, controllers, scorers) must not write it. Any member's code can read it while the swarm runs, so a tool that reads it gives members a view of each other's state, status and time. That is a channel between members outside the swarm's channels, and the swarm records no evidence of it.
