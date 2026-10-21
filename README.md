@@ -277,6 +277,21 @@ The columns:
 
 The columns read from the ledger are null for a sample with no ledger. A sample that runs two swarms keeps only the last one's ledger, while its `model_usage` covers both. The columns read the sample's `store` and `model_usage`, so do not exclude either with `samples_df(exclude_fields=...)`.
 
+The columns hold no per-member data. `swarm_ledger()` reads a sample's whole ledger as a `SwarmLedger`, whose `members` are `MemberLedger`s with a `Meter` and `Calls` each. All are in `inspect_swarm.analysis`, and `SwarmLedger.model_json_schema()` describes every field. For example, each member's cost:
+
+```python
+from inspect_ai.log import read_eval_log
+
+from inspect_swarm.analysis import swarm_ledger
+
+log = read_eval_log("logs/my-eval.eval")
+for sample in log.samples or []:
+    ledger = swarm_ledger(sample)
+    if ledger is not None:
+        for m in ledger.members:
+            print(sample.id, sample.epoch, m.name, m.meter.cost)
+```
+
 ### The ledger
 
 The ledger of a two-member swarm with a cost cap of $1 and a time cap of 600 seconds:
