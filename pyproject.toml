@@ -44,6 +44,17 @@ dev = [
     "pandas>=2.1.0",
     "pyarrow>=10.0.1",
 ]
+# The docs' Python tools are in `doc`, which `dev` leaves out: CI installs `dev`
+# and never builds the docs. Quarto itself is a system install (`make docs`
+# checks its version), so the lock does not carry the Jupyter stack the
+# quarto-cli package pulls in (decision: Ransom, 2026-10-22).
+doc = [
+    "panflute",
+    "markdown",
+    "griffe>=2",
+    "rich",
+    "pyyaml",
+]
 dist = ["twine", "build"]
 
 [tool.hatch.build]
@@ -90,7 +101,7 @@ timeout = 120
 markers = ["slow: needs Docker; runs only with --runslow"]
 
 [tool.pyright]
-include = ["src", "tests"]
+include = ["src", "tests", "examples"]
 typeCheckingMode = "strict"
 pythonPlatform = "All"
 pythonVersion = "3.11"
@@ -100,3 +111,8 @@ pythonVersion = "3.11"
 root = "tests"
 reportPrivateUsage = false
 extraPaths = ["."]
+
+# examples import each other as top-level modules, as `inspect eval
+# examples/<file>.py` resolves them
+[[tool.pyright.executionEnvironments]]
+root = "examples"
