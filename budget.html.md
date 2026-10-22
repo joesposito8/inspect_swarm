@@ -1,0 +1,90 @@
+# Budgets – Inspect Swarm
+
+## Overview
+
+A swarm takes its budget from the sample’s limits. With the default `Budget()`, it reads the sample’s cost, token and time limits when it starts and stops its members at 95% of each. The other 5% (`reserve`) covers calls already in flight when the swarm stops.
+
+After a stop, members have up to `grace` seconds (default 120) to finish calls already in flight. If the sample has a time limit, this period is capped at half its remaining time. Members still running are then cancelled.
+
+Set the caps yourself with [Budget](./reference/inspect_swarm.configuration.html.md#budget):
+
+``` python
+from inspect_ai.agent import react
+
+from inspect_swarm import Budget, member, swarm, swarm_resources
+
+solver = swarm(
+    members=member(react, args={"tools": [swarm_resources()]}, count=4),
+    budget=Budget(cost=20.0, time=1800, split="equal"),
+)
+```
+
+| Field | Default | Meaning |
+|----|----|----|
+| `cost` | `None` | Cost cap in dollars. `None` derives it from the sample’s cost limit. |
+| `tokens` | `None` | Token cap. A string such as `"output:1m"` keeps its metering type. `None` derives it from the sample’s token limit. |
+| `time` | `None` | Seconds after which the swarm stops its members. `None` derives it from the sample’s time limit. |
+| `reserve` | `0.05` | Fraction of each sample limit held back when a cap is derived. |
+| `split` | `"pool"` | How the cost and token caps are divided between members ([Splits](#splits)). |
+| `grace` | `120.0` | Seconds members have, at most, to finish calls in flight after a stop. |
+
+Every field is a plain value, so each can be a task parameter. A member whose call reached a cap ends `swarm_cap`, and the swarm then stops the others ([Members](./members.html.md#how-a-member-ends)). The ledger records the caps, each member’s usage and what stopped the swarm ([Analysis](./analysis.html.md#the-ledger)).
+
+## Cost data
+
+A cost cap needs cost data for every member’s model. The swarm checks this when it starts and raises an error naming the models that have none. Configure prices with [set_model_cost()](https://inspect.aisi.org.uk/reference/inspect_ai.model.html#set_model_cost) or `--model-cost-config`.
+
+## Splits
+
+`Budget.split` divides the cost and token caps between members:
+
+- `"pool"` (default): members share one budget, and any member may spend all of it.
+- `"equal"`: each member gets an equal share.
+- A tuple of weights, one per member in roster order: `(1, 1, 2)` gives the third member half.
+
+A member that uses up its share stops with status `share`. Its unused share is not given to the others, so the split stays a fixed condition of the experiment. The swarm’s caps still apply above the shares: when a call reaches a cap and a share at once, the cap wins, and the swarm stops with `swarm_cap`.
+
+## What members see
+
+When the swarm has a cap, each member’s preamble says how the budget is split. The [swarm_resources()](./reference/inspect_swarm.html.md#swarm_resources) tool, as in the example above, lets a member check the swarm’s caps, how much all members have used, and its own share. Code inside a member can read the same with [swarm_budget()](./reference/inspect_swarm.html.md#swarm_budget).
+
+A tool that reads [sample_limits()](https://inspect.aisi.org.uk/reference/inspect_ai.util.html#sample_limits) shows the sample’s limits, not the swarm’s caps, so it overstates what members can spend.
+
+## Sweeps
+
+Agent count, budget and split are task parameters, so they can be swept. [`examples/budget_sweep.py`](https://github.com/meridianlabs-ai/inspect_swarm/blob/main/examples/budget_sweep.py):
+
+``` python
+from typing import Literal
+
+from inspect_ai import Task, task
+from inspect_ai.agent import react
+from inspect_ai.scorer import match
+from questions import QUESTIONS
+
+from inspect_swarm import Budget, member, swarm, swarm_resources
+
+
+@task
+def budget_sweep(
+    k: int = 4, budget: float = 1.0, split: Literal["pool", "equal"] = "pool"
+) -> Task:
+    return Task(
+        dataset=QUESTIONS,
+        solver=swarm(
+            members=member(react, args={"tools": [swarm_resources()]}, count=k),
+            channels=[],
+            budget=Budget(split=split),
+        ),
+        scorer=match(),
+        cost_limit=budget,
+    )
+```
+
+The task sets the sample’s cost limit once, and the swarm derives its cap from it, so a single-agent arm reads the same number. Three sweeps:
+
+- Matched budget: vary `k` at a fixed `budget` with `split="pool"`. `k=1` is the single-agent arm.
+- Agent count × per-agent budget `b`: vary `k` and `b`, with `budget = k * b` and `split="equal"`. Each member’s share is `b * 0.95`.
+- Split as an ablation: hold `k` and `budget` fixed and vary `split`.
+
+For example, `inspect eval examples/budget_sweep.py -T k=8 -T budget=8 -T split=equal`. Compare arms on the cost the log records, not on the cap ([Analysis](./analysis.html.md#samples-dataframe)).

@@ -1,0 +1,1437 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.10.19">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Shared Memory – Inspect Swarm</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./budget.html" rel="next">
+<link href="./channels.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-bf27225e3a48a9273f3daa8f8e829971.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-6be907ae78873760d36834dbe5a66008.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<link rel="alternate" type="text/markdown" title="LLM-readable docs index" href="./llms.txt">
+<link rel="alternate" type="text/markdown" title="LLM-readable docs (full)" href="./llms-full.txt">
+<link rel="alternate" type="text/markdown" title="LLM-readable docs (user guide)" href="./llms-guide.txt">
+
+
+<meta property="og:title" content="Inspect Swarm">
+<meta property="og:description" content="Run a swarm of agents on one sample of an Inspect task.">
+<meta property="og:site_name" content="Inspect Swarm">
+<meta name="twitter:title" content="Inspect Swarm">
+<meta name="twitter:description" content="Run a swarm of agents on one sample of an Inspect task.">
+<meta name="twitter:card" content="summary">
+</head>
+
+<body class="nav-sidebar docked nav-fixed quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="./index.html">
+    <span class="navbar-title">Inspect Swarm</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-user-guide" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">User Guide</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-user-guide">    
+        <li>
+    <a class="dropdown-item" href="./index.html">
+ <span class="dropdown-text">Basics</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./channels.html">
+ <span class="dropdown-text">Communication</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./budget.html">
+ <span class="dropdown-text">Resources</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./scoring.html">
+ <span class="dropdown-text">Results</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link active" href="./reference/index.html" aria-current="page"> 
+<span class="menu-text">Reference</span></a>
+  </li>  
+</ul>
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/meridianlabs-ai/inspect_swarm"> <i class="bi bi-github" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./channels.html">Communication</a></li><li class="breadcrumb-item"><a href="./shared-memory.html">Shared Memory</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation docked overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Basics</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Getting Started</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./members.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Members</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./controllers.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Controllers</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">Communication</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./channels.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Channels</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./shared-memory.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">Shared Memory</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">Resources</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./budget.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Budgets</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./sandboxes.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Sandboxes</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text">Results</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./scoring.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Scoring</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./analysis.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Analysis</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./restrictions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Restrictions</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a href="./reference/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Reference</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a href="./reference/inspect_swarm.analysis.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Python API</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth2 ">  
+          <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a href="./reference/inspect_swarm.analysis.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">inspect_swarm.analysis</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth3 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference/inspect_swarm.analysis.html#swarmcolumns" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">SwarmColumns</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference/inspect_swarm.analysis.html#swarm_ledger" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">swarm_ledger</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference/inspect_swarm.analysis.html#swarmledger" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">SwarmLedger</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference/inspect_swarm.analysis.html#memberledger" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">MemberLedger</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference/inspect_swarm.analysis.html#meter" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Meter</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference/inspect_swarm.analysis.html#calls" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Calls</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+          <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a href="./reference/inspect_swarm.configuration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Configuration</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth3 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference/inspect_swarm.configuration.html#member" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Member</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference/inspect_swarm.configuration.html#budget" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Budget</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+          <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a href="./reference/inspect_swarm.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">inspect_swarm</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth3 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference/inspect_swarm.html#swarm" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">swarm</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference/inspect_swarm.html#member" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">member</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference/inspect_swarm.html#leaderless" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">leaderless</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference/inspect_swarm.html#swarm_controller" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">swarm_controller</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference/inspect_swarm.html#controller" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Controller</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference/inspect_swarm.html#swarmcontrol" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">SwarmControl</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference/inspect_swarm.html#memberhandle" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">MemberHandle</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference/inspect_swarm.html#memberended" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">MemberEnded</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference/inspect_swarm.html#swarmevent" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">SwarmEvent</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference/inspect_swarm.html#memberinfo" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">MemberInfo</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference/inspect_swarm.html#memberstate" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">MemberState</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference/inspect_swarm.html#stopreason" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">StopReason</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference/inspect_swarm.html#finalname" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">FinalName</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference/inspect_swarm.html#filesystem" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">filesystem</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference/inspect_swarm.html#shared_memory" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">shared_memory</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference/inspect_swarm.html#swarm_tools" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">swarm_tools</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference/inspect_swarm.html#swarm_on_continue" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">swarm_on_continue</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference/inspect_swarm.html#swarm_channel" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">swarm_channel</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference/inspect_swarm.html#channel" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Channel</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference/inspect_swarm.html#channelrun" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">ChannelRun</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference/inspect_swarm.html#channelstate" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">ChannelState</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference/inspect_swarm.html#waitingstate" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">WaitingState</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference/inspect_swarm.html#waitspec" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">WaitSpec</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference/inspect_swarm.html#waitnews" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">WaitNews</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference/inspect_swarm.html#noticeline" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">NoticeLine</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference/inspect_swarm.html#record" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Record</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference/inspect_swarm.html#swarm_resources" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">swarm_resources</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference/inspect_swarm.html#swarm_budget" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">swarm_budget</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference/inspect_swarm.html#swarmbudget" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">SwarmBudget</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference/inspect_swarm.html#budgetusage" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">BudgetUsage</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+      </ul>
+  </li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active" data-toc-expanded="1">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#overview" id="toc-overview" class="nav-link active" data-scroll-target="#overview">Overview</a></li>
+  <li><a href="#wiring" id="toc-wiring" class="nav-link" data-scroll-target="#wiring">Wiring</a></li>
+  <li><a href="#the-tool" id="toc-the-tool" class="nav-link" data-scroll-target="#the-tool">The tool</a>
+  <ul class="collapse">
+  <li><a href="#the-seen-rule" id="toc-the-seen-rule" class="nav-link" data-scroll-target="#the-seen-rule">The seen rule</a></li>
+  </ul></li>
+  <li><a href="#notices" id="toc-notices" class="nav-link" data-scroll-target="#notices">Notices</a></li>
+  <li><a href="#waiting-for-other-members" id="toc-waiting-for-other-members" class="nav-link" data-scroll-target="#waiting-for-other-members">Waiting for other members</a></li>
+  <li><a href="#subagents" id="toc-subagents" class="nav-link" data-scroll-target="#subagents">Subagents</a></li>
+  <li><a href="#limits" id="toc-limits" class="nav-link" data-scroll-target="#limits">Limits</a></li>
+  <li><a href="#the-record-of-the-board" id="toc-the-record-of-the-board" class="nav-link" data-scroll-target="#the-record-of-the-board">The record of the board</a></li>
+  <li><a href="#monitoring-with-inspect-sentinel" id="toc-monitoring-with-inspect-sentinel" class="nav-link" data-scroll-target="#monitoring-with-inspect-sentinel">Monitoring with Inspect Sentinel</a></li>
+  <li><a href="#migrating-from-memoryinstance" id="toc-migrating-from-memoryinstance" class="nav-link" data-scroll-target="#migrating-from-memoryinstance">Migrating from <code>memory(instance=...)</code></a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./channels.html">Communication</a></li><li class="breadcrumb-item"><a href="./shared-memory.html">Shared Memory</a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title">Shared Memory</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="overview" class="level2">
+<h2 class="anchored" data-anchor-id="overview">Overview</h2>
+<p><span class="element-type-name ref-interlink"><a href="./reference/inspect_swarm.html#shared_memory">shared_memory()</a></span> gives the swarm one board of files that every member reads and writes with a <code>shared_memory</code> tool. The tool has the commands of Inspect’s <span class="element-type-name ref-interlink"><a href="https://inspect.aisi.org.uk/reference/inspect_ai.tool.html#memory">memory()</a></span> tool, over files under <code>/shared_memory</code>, and one more, <code>append</code>. Every write goes through the swarm as a record from the member that made it, so the log keeps the board’s whole history, and members hear about each other’s changes.</p>
+<p>Members that get <code>shared_memory</code> also get <code>swarm_wait</code>, so a member that needs a peer’s work waits instead of polling. Each sample has its own board, which is gone when the swarm ends.</p>
+<p><a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/main/examples/shared_memory.py"><code>examples/shared_memory.py</code></a> is a runnable swarm that splits a count between members, who share their parts on the board and wait for each other.</p>
+</section>
+<section id="wiring" class="level2">
+<h2 class="anchored" data-anchor-id="wiring">Wiring</h2>
+<p>Members get the tool from <span class="element-type-name ref-interlink"><a href="./reference/inspect_swarm.html#swarm_tools">swarm_tools()</a></span>, which gives a member the tools of the swarm’s channels. Call it inside a member builder registered with <code>@agent</code>, and pass the builder to <span class="element-type-name ref-interlink"><a href="./reference/inspect_swarm.html#member">member()</a></span> without calling it. To hear about changes between turns, a member also needs <span class="element-type-name ref-interlink"><a href="./reference/inspect_swarm.html#swarm_on_continue">swarm_on_continue()</a></span> as its agent’s <code>on_continue</code>, called in the same builder:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_ai.agent <span class="im">import</span> Agent, agent, deepagent, react</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_ai.tool <span class="im">import</span> bash</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_swarm <span class="im">import</span> (</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    filesystem,</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    member,</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    shared_memory,</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    swarm,</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    swarm_on_continue,</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    swarm_tools,</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="at">@agent</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> solver_member() <span class="op">-&gt;</span> Agent:</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> react(tools<span class="op">=</span>[bash(), swarm_tools()], on_continue<span class="op">=</span>swarm_on_continue())</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a><span class="at">@agent</span></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> reviewer_member() <span class="op">-&gt;</span> Agent:</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> deepagent(tools<span class="op">=</span>[bash(), swarm_tools()], on_continue<span class="op">=</span>swarm_on_continue())</span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>solver <span class="op">=</span> swarm(</span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>    members<span class="op">=</span>[</span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>        member(solver_member, name<span class="op">=</span><span class="st">"solver"</span>, count<span class="op">=</span><span class="dv">3</span>),</span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>        member(reviewer_member, name<span class="op">=</span><span class="st">"reviewer"</span>),</span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>    ],</span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>    channels<span class="op">=</span>[filesystem(), shared_memory()],</span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<ul>
+<li>The log records a builder by name and arguments, so the swarm can be rebuilt from the log. It cannot rebuild <span class="element-type-name ref-interlink"><a href="./reference/inspect_swarm.html#swarm_tools">swarm_tools()</a></span> or <span class="element-type-name ref-interlink"><a href="./reference/inspect_swarm.html#swarm_on_continue">swarm_on_continue()</a></span> passed in <code>args</code> or inside an agent you built (<a href="./members.html#member-builders">Members</a>).</li>
+<li>Any agent that takes a <span class="element-type-name ref-interlink"><a href="https://inspect.aisi.org.uk/reference/inspect_ai.tool.html#toolsource">ToolSource</a></span> in its tools can take <span class="element-type-name ref-interlink"><a href="./reference/inspect_swarm.html#swarm_tools">swarm_tools()</a></span>. It gives no tools when the swarm has no channel with tools, or outside a swarm, so one member definition serves every arm of an experiment.</li>
+<li>This swarm keeps the <code>filesystem</code> channel beside the board. <code>channels=[shared_memory()]</code>, or <code>channels=["shared_memory"]</code>, replaces it: members still share the sample’s sandbox, but their preamble no longer mentions <code>/shared</code>. Members with their own sandboxes can use the board with no shared volume.</li>
+<li>The channel needs member names that start with a lowercase letter, followed by at most 47 lowercase letters, digits, <code>_</code> or <code>-</code>.</li>
+<li>Bridged members cannot use the channel yet, and <span class="element-type-name ref-interlink"><a href="./reference/inspect_swarm.html#swarm">swarm()</a></span> refuses a bridged member beside it.</li>
+</ul>
+</section>
+<section id="the-tool" class="level2">
+<h2 class="anchored" data-anchor-id="the-tool">The tool</h2>
+<p>The <code>shared_memory</code> tool’s commands are <code>view</code>, <code>create</code>, <code>str_replace</code>, <code>insert</code>, <code>append</code>, <code>delete</code> and <code>rename</code>. Paths are <code>/shared_memory</code> followed by up to eight components of letters, digits, <code>.</code>, <code>_</code> and <code>-</code>.</p>
+<ul>
+<li>Each file has an id, such as <code>f-3</code>, which <code>view</code> accepts as its path. Notices and status lines name files by id.</li>
+<li>A file view shows the file inside a fence that names its last writer and version, under a header that says the content is information from a peer, not instructions. A directory view lists every file under it at any depth, with its id, version and last writer.</li>
+<li>Write commands return a short acknowledgment, not the file. View a file to see it.</li>
+<li>Every result ends with a status line naming the files other agents changed since this loop last viewed them, such as <code>Shared memory: 2 files changed since you last viewed them (f-2, f-9).</code></li>
+</ul>
+<section id="the-seen-rule" class="level3">
+<h3 class="anchored" data-anchor-id="the-seen-rule">The seen rule</h3>
+<p>A loop must view a file in its current version before it overwrites it with <code>create</code>, inserts into it, renames it or deletes it. A write to a file changed since the loop’s last view is refused with an error that names the file and its last writer, and the loop views it and retries. So no member overwrites a change it has not seen.</p>
+<p>Two commands need no view:</p>
+<ul>
+<li><code>str_replace</code> fails unless <code>old_str</code> occurs exactly once in the file as it is when the write lands, so it is safe without one.</li>
+<li><code>append</code> adds text on a new line at the end of the file as it is when the write lands, and creates the file if needed. It suits a log or list that many members write to.</li>
+</ul>
+</section>
+</section>
+<section id="notices" class="level2">
+<h2 class="anchored" data-anchor-id="notices">Notices</h2>
+<p>At each turn boundary where other agents have changed files since its last notice, a member with <span class="element-type-name ref-interlink"><a href="./reference/inspect_swarm.html#swarm_on_continue">swarm_on_continue()</a></span> gets one user message, such as:</p>
+<pre><code>[Swarm notice] 1 shared memory file changed since you last viewed it (f-1 new; by w-1). View one with shared_memory(command="view", path="f-1"), or list them with path="/shared_memory".</code></pre>
+<ul>
+<li>A notice holds counts, file ids, member names and fixed instructions, never a member-chosen file path or file contents. Its metadata, under <code>inspect_swarm</code>, gives the notice’s id and, for each channel’s line, the ids it names.</li>
+<li>The member continues or stops exactly as it would without the hook. If it has a hook of its own, wrap it: <code>swarm_on_continue(my_hook)</code>. For <code>react(submit=False)</code>, which stops after a turn without tool calls, pass <code>swarm_on_continue(no_tool_calls="stop")</code>.</li>
+<li>A member that is stopping gets no notice. Neither do a member’s subagents: only its own loop does.</li>
+<li><code>member(..., delivery="poll")</code> turns notices off for that member. It still learns of changes from the status line that ends each <code>shared_memory</code> result.</li>
+<li>A custom agent gets notices only if it calls an <code>on_continue</code> hook at each turn boundary, as <span class="element-type-name ref-interlink"><a href="https://inspect.aisi.org.uk/reference/inspect_ai.agent.html#react">react()</a></span> and <span class="element-type-name ref-interlink"><a href="https://inspect.aisi.org.uk/reference/inspect_ai.agent.html#deepagent">deepagent()</a></span> do. If it does not, give its member <code>delivery="poll"</code>, so the metrics do not list it in <code>notify_unwired</code> (<a href="./analysis.html#wiring-checks">Analysis</a>).</li>
+</ul>
+</section>
+<section id="waiting-for-other-members" class="level2">
+<h2 class="anchored" data-anchor-id="waiting-for-other-members">Waiting for other members</h2>
+<p><code>swarm_wait</code> blocks until there is something for the member to look at:</p>
+<ul>
+<li>A file under the <code>path</code> it watches (the whole board without one) has a change that the waiting agent did not write and has not viewed. A subagent’s write counts, so a member can wait for its own subagents.</li>
+<li>Another member has ended.</li>
+</ul>
+<p>It returns at once if that is already so, and keeps returning while such a file stays unviewed. Its result names the changed files by id and the ended members by name and status, never file content: the member views a file to read it.</p>
+<p>A wait also ends without news: when every member is waiting, has ended or has not started; when the swarm stops; when the member’s own agent finishes; or after <code>timeout</code> seconds. <code>max_wait</code> sets the longest wait and the default <code>timeout</code>, 600 seconds unless you change it, for example <code>shared_memory(max_wait=300)</code>.</p>
+<p>A wait is time inside a tool call. It counts towards the member’s time limit, the swarm’s time cap and the sample’s time and working limits. It makes no model call, so it adds no tokens, cost or steps. The metrics report each member’s waits, their time, and its <code>idle_time</code>: the seconds the member did nothing but wait (<a href="./analysis.html#waits">Analysis</a>).</p>
+<p>A swarm with only the <code>filesystem</code> channel, or <code>channels=[]</code>, has no <code>swarm_wait</code>: there is nothing it could wake on.</p>
+</section>
+<section id="subagents" class="level2">
+<h2 class="anchored" data-anchor-id="subagents">Subagents</h2>
+<p>A member’s subagents read and write the board as the member. deepagent’s <span class="element-type-name ref-interlink"><a href="https://inspect.aisi.org.uk/reference/inspect_ai.agent.html#general">general()</a></span> subagents, synchronous and background, and any nested loop given <span class="element-type-name ref-interlink"><a href="./reference/inspect_swarm.html#swarm_tools">swarm_tools()</a></span>, get the <code>shared_memory</code> and <code>swarm_wait</code> tools.</p>
+<ul>
+<li>Their writes are records from the member. The evidence also names the loop that made each write or read, and marks a subagent’s as <code>nested</code>.</li>
+<li>Each loop has its own view of the board: the seen rule and the status line apply to the loop that calls the tool.</li>
+<li>Subagents get no notices. They learn of changes from the status line.</li>
+<li>A member’s subagents share its write rate, so they cannot multiply its write volume.</li>
+<li>A subagent’s wait counts in the member’s <code>wait_time</code> but not its <code>idle_time</code>.</li>
+</ul>
+<p>A deepagent member also has a private <span class="element-type-name ref-interlink"><a href="https://inspect.aisi.org.uk/reference/inspect_ai.tool.html#memory">memory()</a></span> of its own by default. Pass <code>deepagent(memory=False)</code> when the board should be its only memory tool.</p>
+</section>
+<section id="limits" class="level2">
+<h2 class="anchored" data-anchor-id="limits">Limits</h2>
+<p>The board is bounded, so every file fits whole in one view:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Argument</th>
+<th>Default</th>
+<th>Limit</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>max_files</code></td>
+<td>100</td>
+<td>Files on the board</td>
+</tr>
+<tr class="even">
+<td><code>max_file_bytes</code></td>
+<td>16,000</td>
+<td>UTF-8 bytes in one file</td>
+</tr>
+<tr class="odd">
+<td><code>max_file_lines</code></td>
+<td>1,000</td>
+<td>Lines in one file</td>
+</tr>
+<tr class="even">
+<td><code>max_board_bytes</code></td>
+<td>400,000</td>
+<td>UTF-8 bytes in all files together</td>
+</tr>
+<tr class="odd">
+<td><code>rate</code></td>
+<td><code>(60, 60.0)</code></td>
+<td>Writes per member, all its loops together, in a sliding window of seconds; <code>None</code> for no limit</td>
+</tr>
+<tr class="even">
+<td><code>max_wait</code></td>
+<td>600</td>
+<td>The longest <code>swarm_wait</code>, in seconds, and its default timeout</td>
+</tr>
+</tbody>
+</table>
+<p>A write that would pass a limit is refused with an error that says which. Once the swarm begins to stop, writes are refused and views still work. A file cannot contain the fence tags the swarm uses (<code>&lt;peer_file</code>, <code>&lt;peer_listing</code>, <code>&lt;peer_message</code> and their closing tags), and a write that would leave one in a file is refused.</p>
+</section>
+<section id="the-record-of-the-board" class="level2">
+<h2 class="anchored" data-anchor-id="the-record-of-the-board">The record of the board</h2>
+<p>The swarm logs the members’ writes, views, notices and waits as <span class="element-type-name ref-interlink"><a href="https://inspect.aisi.org.uk/reference/inspect_ai.event.html#infoevent">InfoEvent</a></span>s with source <code>inspect_swarm</code> and type <code>comm</code>. Each is in the span of the tool call that made it, except a notice’s, which is in the member’s own loop:</p>
+<ul>
+<li><code>sent</code>: a write that reached the swarm, with its operation and payload, and why it was refused if it was.</li>
+<li><code>delivered</code>: a write applied to the board, with its commit sequence number and each file’s previous and new version. Replaying the delivered writes in sequence order rebuilds every version of the board.</li>
+<li><code>read</code>: a view, with each file’s version and the record that last wrote it, or a listing.</li>
+<li><code>notified</code>: a notice line the member got.</li>
+<li><code>waited</code>: a <code>swarm_wait</code> call, with what ended it and how long it took.</li>
+</ul>
+<p>Each event names the member and the loop that acted. The <a href="./analysis.html#communication">metrics</a> count these events for each member.</p>
+</section>
+<section id="monitoring-with-inspect-sentinel" class="level2">
+<h2 class="anchored" data-anchor-id="monitoring-with-inspect-sentinel">Monitoring with Inspect Sentinel</h2>
+<p>A native member’s call to <code>shared_memory</code> is an ordinary tool call, so <a href="https://meridianlabs-ai.github.io/inspect_sentinel">Inspect Sentinel</a>’s tool stages see it with no swarm code. A protocol at <code>BeforeToolCall</code> can reject a write before it reaches the board, and one at <code>AfterToolCall</code> sees exactly what a view is about to show. For example, a rule that keeps credentials off the board:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_sentinel <span class="im">import</span> (</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    BeforeToolCall,</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    Context,</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    Decision,</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    Escalations,</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    Protocol,</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    call_text,</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    find_words,</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    protocol,</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="at">@protocol</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> no_secrets_on_board() <span class="op">-&gt;</span> Protocol:</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Reject shared_memory writes that mention a credential."""</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>    <span class="cf">async</span> <span class="kw">def</span> decide(</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>        context: Context, step: BeforeToolCall, escalations: Escalations</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>    ) <span class="op">-&gt;</span> Decision <span class="op">|</span> <span class="va">None</span>:</span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> step.call.function <span class="op">!=</span> <span class="st">"shared_memory"</span>:</span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>            <span class="cf">return</span> <span class="va">None</span></span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> step.call.arguments.get(<span class="st">"command"</span>) <span class="op">==</span> <span class="st">"view"</span>:</span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>            <span class="cf">return</span> <span class="va">None</span></span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>        used <span class="op">=</span> find_words(call_text(step.call), [<span class="st">"password"</span>, <span class="st">"api_key"</span>, <span class="st">"token"</span>])</span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> used:</span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a>            <span class="cf">return</span> Decision.reject(</span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a>                <span class="ss">f"write mentions </span><span class="sc">{</span><span class="st">', '</span><span class="sc">.</span>join(used)<span class="sc">}</span><span class="ss">"</span>,</span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>                message<span class="op">=</span><span class="st">"Credentials may not be written to shared memory."</span>,</span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a>            )</span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> Decision.proceed()</span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> decide</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Pass it to the task as <code>Task(..., sentinel=no_secrets_on_board())</code>. The member gets the decision’s message as the tool call’s error. A step’s <code>conversation</code> is the agent span id of the loop that made the call, and each <code>comm</code> event names that loop beside its member, so the two can be joined. Sentinel does not run on bridged members’ tool calls, which is one reason bridged members cannot use the channel yet.</p>
+</section>
+<section id="migrating-from-memoryinstance" class="level2">
+<h2 class="anchored" data-anchor-id="migrating-from-memoryinstance">Migrating from <code>memory(instance=...)</code></h2>
+<p>Before this channel, a board shared on purpose was a <span class="element-type-name ref-interlink"><a href="https://inspect.aisi.org.uk/reference/inspect_ai.tool.html#memory">memory()</a></span> tool with an explicit instance in every member’s tools, <code>memory(instance="board")</code>, with the prompt saying it is shared. That still works, and it is a different channel: members’ <span class="element-type-name ref-interlink"><a href="https://inspect.aisi.org.uk/reference/inspect_ai.event.html#toolevent">ToolEvent</a></span>s record its use, with no sender, fence, notices, bounds or <code>comm</code> events. Nothing refuses using both; an arm that wants the board as its only channel gives no two members a shared instance.</p>
+<p>To move a task to the channel:</p>
+<ol type="1">
+<li>In the member builder, replace <code>memory(instance="board")</code> with <span class="element-type-name ref-interlink"><a href="./reference/inspect_swarm.html#swarm_tools">swarm_tools()</a></span> in the tools, and pass <code>on_continue=swarm_on_continue(inner)</code> for notices, where <code>inner</code> is the hook the member had. The builder stays a registered <code>@agent</code>.</li>
+<li>For a deepagent member, pass <code>memory=False</code> to keep one memory tool as before, or leave deepagent’s private <span class="element-type-name ref-interlink"><a href="https://inspect.aisi.org.uk/reference/inspect_ai.tool.html#memory">memory()</a></span> as an extra notebook per member. These are different experimental conditions.</li>
+<li>Replace the instructions that described the board with <code>"shared_memory"</code> or <code>shared_memory(...)</code> in <code>channels=</code>. Its instructions go in each member’s preamble.</li>
+<li>Change the prompt’s tool and path names (<code>memory</code>, <code>/memories</code>) to <code>shared_memory</code> and <code>/shared_memory</code>.</li>
+</ol>
+<p>What changes for the members:</p>
+<ul>
+<li>Overwriting with <code>create</code>, <code>insert</code>, <code>delete</code> and <code>rename</code> need a current view (<a href="#the-seen-rule">The seen rule</a>), and <code>append</code> adds an entry at the end of a file without one.</li>
+<li>Writes return an acknowledgment, not a snippet of the file.</li>
+<li>A directory view lists every file under it at any depth, and there are no empty directories.</li>
+<li>Paths are narrower, files and the board are bounded, and tabs are kept.</li>
+<li>Views are fenced and name the last writer, and notices and status lines report changes.</li>
+</ul>
+<p>An eval set comparing the two boards runs them as two arms: the channel list and the builder’s arguments differ, so their task identifiers do. <a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/main/examples/proof_swarm.py"><code>examples/proof_swarm.py</code></a> is shaped like such a port: members with their own sandboxes whose only channel is the board.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<div id="copy-page-btn" class="btn-group" style="display:none;">
+  <button type="button" class="btn btn-sm btn-light" id="copy-page-action" title="Copy page as Markdown">
+    <i class="bi bi-clipboard"></i> Copy page
+  </button>
+  <button type="button" class="btn btn-sm btn-light dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+    <span class="visually-hidden">Toggle Dropdown</span>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><a class="dropdown-item" href="#" id="copy-page-md">
+      <i class="bi bi-clipboard"></i> Copy page as Markdown
+    </a></li>
+    <li><a class="dropdown-item" href="#" id="open-page-md">
+      <i class="bi bi-box-arrow-up-right"></i> Open Markdown
+    </a></li>
+  </ul>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  var path = window.location.pathname;
+  var mdUrl = path.endsWith("/")
+    ? path + "index.html.md"
+    : path.replace(/\.html$/, ".html.md");
+  var btn = document.getElementById("copy-page-btn");
+  var cachedMarkdown = null;
+
+  // Pre-fetch the .html.md content
+  fetch(mdUrl)
+    .then(function (res) {
+      if (!res.ok) throw new Error(res.status);
+      return res.text();
+    })
+    .then(function (text) {
+      cachedMarkdown = text;
+
+      // Relocate button into the .quarto-title div
+      var titleDiv = document.querySelector(".quarto-title");
+      if (titleDiv) {
+        titleDiv.appendChild(btn);
+        btn.style.display = "";
+      }
+    })
+    .catch(function () {
+      // No .html.md available — remove button entirely
+      btn.remove();
+    });
+
+  function copyMarkdown(e) {
+    e.preventDefault();
+    if (!cachedMarkdown) return;
+    navigator.clipboard.writeText(cachedMarkdown).then(function () {
+      // Brief visual feedback — lock width to prevent layout shift
+      var actionBtn = document.getElementById("copy-page-action");
+      var original = actionBtn.innerHTML;
+      actionBtn.style.minWidth = actionBtn.offsetWidth + "px";
+      actionBtn.innerHTML = '<i class="bi bi-check2"></i> Copied!';
+      setTimeout(function () {
+        actionBtn.innerHTML = original;
+        actionBtn.style.minWidth = "";
+      }, 1500);
+    });
+  }
+
+  document.getElementById("copy-page-action").addEventListener("click", copyMarkdown);
+  document.getElementById("copy-page-md").addEventListener("click", copyMarkdown);
+  document.getElementById("open-page-md").addEventListener("click", function (e) {
+    e.preventDefault();
+    window.open(mdUrl, "_blank");
+  });
+});
+</script>
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/meridianlabs-ai\.github\.io\/inspect_swarm");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        const annoteTargets = window.document.querySelectorAll('.code-annotation-anchor');
+        for (let i=0; i<annoteTargets.length; i++) {
+          const annoteTarget = annoteTargets[i];
+          const targetCell = annoteTarget.getAttribute("data-target-cell");
+          const targetAnnotation = annoteTarget.getAttribute("data-target-annotation");
+          const contentFn = () => {
+            const content = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+            if (content) {
+              const tipContent = content.cloneNode(true);
+              tipContent.classList.add("code-annotation-tip-content");
+              return tipContent.outerHTML;
+            }
+          }
+          const config = {
+            allowHTML: true,
+            content: contentFn,
+            onShow: (instance) => {
+              selectCodeLines(instance.reference);
+              instance.reference.classList.add('code-annotation-active');
+              window.tippy.hideAll();
+            },
+            onHide: (instance) => {
+              unselectCodeLines();
+              instance.reference.classList.remove('code-annotation-active');
+            },
+            maxWidth: 300,
+            delay: [50, 0],
+            duration: [200, 0],
+            offset: [5, 10],
+            arrow: true,
+            trigger: 'click',
+            appendTo: function(el) {
+              return el.parentElement.parentElement.parentElement;
+            },
+            interactive: true,
+            interactiveBorder: 10,
+            theme: 'quarto',
+            placement: 'right',
+            positionFixed: true,
+            popperOptions: {
+              modifiers: [
+              {
+                name: 'flip',
+                options: {
+                  flipVariations: false, // true by default
+                  allowedAutoPlacements: ['right'],
+                  fallbackPlacements: ['right', 'top', 'top-start', 'top-end', 'bottom', 'bottom-start', 'bottom-end', 'left'],
+                },
+              },
+              {
+                name: 'preventOverflow',
+                options: {
+                  mainAxis: false,
+                  altAxis: false
+                }
+              }
+              ]        
+            }      
+          };
+          window.tippy(annoteTarget, config); 
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./channels.html" class="pagination-link" aria-label="Channels">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Channels</span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./budget.html" class="pagination-link" aria-label="Budgets">
+        <span class="nav-page-text">Budgets</span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+      <ul class="footer-items list-unstyled">
+    <li class="nav-item">
+    <a class="nav-link" href="https://github.com/meridianlabs-ai">
+<p>Meridian Labs</p>
+</a>
+  </li>  
+</ul>
+    </div>   
+    <div class="nav-footer-center">
+      <ul class="footer-items list-unstyled">
+    <li class="nav-item">
+    <a class="nav-link" href="https://github.com/meridianlabs-ai/inspect_swarm">
+<p>Code</p>
+</a>
+  </li>  
+    <li class="nav-item">
+    <a class="nav-link" href="https://github.com/meridianlabs-ai/inspect_swarm/blob/main/CHANGELOG.md">
+<p>Changelog</p>
+</a>
+  </li>  
+    <li class="nav-item">
+    <a class="nav-link" href="https://github.com/meridianlabs-ai/inspect_swarm/blob/main/LICENSE">
+<p>License</p>
+</a>
+  </li>  
+    <li class="nav-item">
+    <a class="nav-link" href="https://github.com/meridianlabs-ai/inspect_swarm/issues">
+<p>Issues</p>
+</a>
+  </li>  
+</ul>
+    </div>
+    <div class="nav-footer-right">
+      <ul class="footer-items list-unstyled">
+    <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/meridianlabs-ai/inspect_swarm/">
+      <i class="bi bi-github" role="img" aria-label="Inspect Swarm on GitHub">
+</i> 
+    </a>
+  </li>  
+</ul>
+    </div>
+  </div>
+</footer>
+
+
+
+
+</body></html>

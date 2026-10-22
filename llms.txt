@@ -1,0 +1,32 @@
+# Inspect Swarm
+
+> Run a swarm of agents on one sample of an Inspect task.
+
+
+## Basics
+
+- [Getting Started](https://meridianlabs-ai.github.io/inspect_swarm/index.html.md)
+- [Members](https://meridianlabs-ai.github.io/inspect_swarm/members.html.md)
+- [Controllers](https://meridianlabs-ai.github.io/inspect_swarm/controllers.html.md)
+
+## Communication
+
+- [Channels](https://meridianlabs-ai.github.io/inspect_swarm/channels.html.md)
+- [Shared Memory](https://meridianlabs-ai.github.io/inspect_swarm/shared-memory.html.md)
+
+## Resources
+
+- [Budgets](https://meridianlabs-ai.github.io/inspect_swarm/budget.html.md)
+- [Sandboxes](https://meridianlabs-ai.github.io/inspect_swarm/sandboxes.html.md)
+
+## Results
+
+- [Scoring](https://meridianlabs-ai.github.io/inspect_swarm/scoring.html.md)
+- [Analysis](https://meridianlabs-ai.github.io/inspect_swarm/analysis.html.md)
+- [Restrictions](https://meridianlabs-ai.github.io/inspect_swarm/restrictions.html.md)
+
+## Reference
+
+- [inspect_swarm.analysis](https://meridianlabs-ai.github.io/inspect_swarm/reference/inspect_swarm.analysis.html.md): Columns for samples_df() and the models of the swarm ledger.
+- [Configuration](https://meridianlabs-ai.github.io/inspect_swarm/reference/inspect_swarm.configuration.html.md): The member record and the swarm's budget.
+- [inspect_swarm](https://meridianlabs-ai.github.io/inspect_swarm/reference/inspect_swarm.html.md): Swarms, members, controllers, channels and the budget view.
