@@ -46,7 +46,7 @@ From the command line:
 inspect eval my_tasks.py --solver inspect_swarm/swarm -S 'members={factory: react, count: 4}'
 ```
 
-Each sample runs four `react()` members, `react-1` to `react-4`, at the same time. Each starts with the sample's input and a short preamble: its name, the number of members, and how to share files. The swarm ends when all members have ended, and its answer is the first submission. The task's scorer scores it as it would score a single agent.
+Each sample runs four `react()` members, `react-1` to `react-4`, at the same time. Each starts with the sample's input and a short preamble: its name, the number of members, and how to share files. By default the swarm stops at the first submission and uses it as its answer. It stops the remaining members. To let every member run to its end, use `leaderless(stop_on_submission=False)` (see [Controllers and channels](#controllers-and-channels)). The task's scorer scores it as it would score a single agent.
 
 `--solver` and `eval(solver=...)` replace the task's whole solver, including any system message or tools it set up, so give the members their tools and prompt. Members use the eval's model unless they are given one. The task's `setup` solver still runs first.
 
@@ -165,7 +165,7 @@ A member's status says how it ended:
 |---|---|
 | `submitted` | Its agent returned normally. Its output is its answer. |
 | `unsubmitted` | Its agent returned with a `content_filter` or `model_length` stop reason, as `react()` does after repeated refusals or a context overflow. |
-| `stopped` | The swarm stopped it, for example when the swarm's time cap was reached. |
+| `stopped` | The swarm stopped it, for example when another member submitted or the swarm's time cap was reached. |
 | `share` | It used up its share of a split budget. |
 | `member_limit:<type>` | It reached one of its own `limits`. |
 | `member_limit:custom` | Its agent stopped itself by raising `LimitExceededError("custom", ...)` with no `source`, for example from `react(on_continue=...)`. The other members continue. |
@@ -175,7 +175,9 @@ A member's status says how it ended:
 
 ## Controllers and channels
 
-`controller=` decides which members start and when the swarm is done. The only built-in controller is `leaderless`, the default. It starts every member with the sample's input and ends the swarm when all have ended.
+`controller=` decides which members start and when the swarm is done. The only built-in controller is `leaderless`, the default. It starts every member with the sample's input and stops the swarm when the first member submits, since that submission is the answer. The other members finish the calls they have in flight and stop. Those still running after the grace period are cancelled. If no member submits, the swarm ends when all have ended.
+
+Pass `leaderless(stop_on_submission=False)` to let every member run to its end. Use it when the scorer reads what members leave in the sandbox, when you measure each member's result (team@k), or when your agent returns normally when it gives up, which would count as a submission.
 
 `channels=` decides how members share information. There are two built-in channels: `filesystem`, the default, and `shared_memory` ([The shared-memory channel](#the-shared-memory-channel)). `filesystem` adds no tools. It tells each member, in its preamble, to share files in `/shared`, to read and append to `/shared/notes.md`, and to keep its own work in `/scratch/<member>`. It does not create these directories. Change the paths with `filesystem(...)`:
 
@@ -443,7 +445,7 @@ The ledger of a two-member swarm with a cost cap of $1 and a time cap of 600 sec
   "unpriced_models": [],
   "native_compaction_classes": [],
   "overshoot": {},
-  "stop_reason": "all_done",
+  "stop_reason": "submitted",
   "ended_by": null,
   "interrupted": false,
   "final_cancelled": false,
@@ -461,7 +463,7 @@ The ledger of a two-member swarm with a cost cap of $1 and a time cap of 600 sec
 - `sample_delta` is the sample's usage while the swarm ran. `unattributed` is `sample_delta` minus `swarm`: usage no meter holds, such as the tokens of approval calls.
 - `unpriced_models` are models with tokens but no cost. `native_compaction_classes` are loaded model classes that can compact a conversation natively, which logs nothing, so their usage may be missing.
 - `overshoot` is how far usage went past each cap, for caps it passed. Calls in flight at a stop can carry usage past a cap.
-- `stop_reason` is why the swarm stopped itself: a controller's `all_done` (as `leaderless` returns), `verified` or `quiescence`, `controller:<reason>` for any other reason a controller returns, `swarm_cap` or `swarm_time`. `ended_by` is what ended it from outside: `sample_limit:<type>`, `operator` for an interrupt, or `unknown`. Each is `null` when it did not happen. Both are set when a sample limit ends the swarm during its own stop.
+- `stop_reason` is why the swarm stopped itself: a controller's `submitted` or `all_done` (as `leaderless` returns), `verified` or `quiescence`, `controller:<reason>` for any other reason a controller returns, `swarm_cap` or `swarm_time`. `ended_by` is what ended it from outside: `sample_limit:<type>`, `operator` for an interrupt, or `unknown`. Each is `null` when it did not happen. Both are set when a sample limit ends the swarm during its own stop.
 - `interrupted` means an error (a member's, the controller's or the final step's) or a cancellation ended the swarm before it finished, `final_cancelled` that the final step was cancelled, and `resumed` that the sample resumed from a checkpoint.
 - `total_complete` means no call is known to be missing from the totals: nothing was cancelled or interrupted, every call reported priced usage, and no model class can compact natively. Otherwise the totals are lower bounds. `attribution_complete` adds that `unattributed` is zero.
 

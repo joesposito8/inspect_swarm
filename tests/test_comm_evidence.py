@@ -15,7 +15,14 @@ from inspect_ai.event import InfoEvent, SpanBeginEvent
 from inspect_ai.log._transcript import Transcript
 from inspect_ai.model import ModelOutput
 
-from inspect_swarm import member, shared_memory, swarm, swarm_on_continue, swarm_tools
+from inspect_swarm import (
+    leaderless,
+    member,
+    shared_memory,
+    swarm,
+    swarm_on_continue,
+    swarm_tools,
+)
 from inspect_swarm._background import MemberBackground
 from inspect_swarm._bus._bus import current_bus
 from inspect_swarm._metrics import CommMetrics, MemberMetrics, SwarmMetrics
@@ -91,6 +98,7 @@ async def test_records_rejections_and_reads_are_counted_per_member_and_channel(
                 _member("w", {"command": "view", "path": "/shared_memory"}),
                 _member("q"),
             ],
+            controller=leaderless(stop_on_submission=False),
             channels=[shared_memory(max_file_bytes=20, rate=(2, 3600.0))],
         ),
         tmp_path,
@@ -154,6 +162,7 @@ async def test_notices_are_counted_per_member_and_channel(tmp_path: Path) -> Non
                 _member("q"),
             ],
             channels=[shared_memory()],
+            controller=leaderless(stop_on_submission=False),
         ),
         tmp_path,
     )

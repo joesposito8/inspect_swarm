@@ -39,6 +39,7 @@ from inspect_swarm import (
     ChannelState,
     NoticeLine,
     Record,
+    leaderless,
     member,
     shared_memory,
     swarm,
@@ -207,6 +208,7 @@ async def test_a_notice_names_new_files_by_id_and_reaches_the_next_model_call(
         swarm(
             [member(_worker(turns), name="w-1"), member(_worker(turns), name="w-2")],
             channels=[shared_memory()],
+            controller=leaderless(stop_on_submission=False),
         ),
         tmp_path,
     )
@@ -279,6 +281,7 @@ async def test_notices_cap_listed_ids_and_report_a_deletion_once(
         swarm(
             [member(_worker(turns), name="w-1"), member(_worker(turns), name="w-2")],
             channels=[shared_memory()],
+            controller=leaderless(stop_on_submission=False),
         ),
         tmp_path,
     )
@@ -332,6 +335,7 @@ async def test_a_notice_goes_in_the_state_the_inner_hook_returns(
         swarm(
             [member(_worker(turns), name="w-1"), member(replacing, name="w-2")],
             channels=[shared_memory()],
+            controller=leaderless(stop_on_submission=False),
         ),
         tmp_path,
     )
@@ -369,6 +373,7 @@ async def test_a_notice_comes_just_before_the_continue_message(
         swarm(
             [member(_worker(turns), name="w-1"), member(continuing, name="w-2")],
             channels=[shared_memory()],
+            controller=leaderless(stop_on_submission=False),
         ),
         tmp_path,
     )
@@ -407,6 +412,7 @@ async def test_a_member_that_stops_gets_no_notice(tmp_path: Path) -> None:
         swarm(
             [member(_worker(turns), name="w-1"), member(stopping, name="w-2")],
             channels=[shared_memory()],
+            controller=leaderless(stop_on_submission=False),
         ),
         tmp_path,
     )
@@ -564,6 +570,7 @@ async def test_a_poll_member_gets_the_status_line_and_no_notice(
                 member(_worker(turns), name="w-2", delivery="poll"),
             ],
             channels=[shared_memory()],
+            controller=leaderless(stop_on_submission=False),
         ),
         tmp_path,
     )
@@ -760,6 +767,7 @@ async def test_unwired_members_are_reported_in_the_metrics(tmp_path: Path) -> No
                 member(_worker(turns, tools=False), name="no-tools"),
             ],
             channels=[shared_memory()],
+            controller=leaderless(stop_on_submission=False),
         ),
         tmp_path,
     )
