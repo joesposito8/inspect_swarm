@@ -85,14 +85,14 @@ It is per member, beside `name` and `role`, which it qualifies (decision: Ransom
 
 ### The preamble
 
-`_preamble()` keeps its signature; it reads `member.choose_name` from the `MemberInfo` it already takes. Only the first paragraph changes:
+`_preamble()` gains the roster-wide `choosers: bool` parameter described in [The `filesystem` channel](#the-filesystem-channel) and reads the current member's own flag from the `MemberInfo` it already takes. Its first paragraph changes for a member that chooses:
 
 | | `choose_name=False` (unchanged) | `choose_name=True` |
 |---|---|---|
 | Several members | `You are {name}, one of {N} agents in a swarm working on this task at the same time.` | `You are one of {N} agents in a swarm working on this task at the same time. The swarm has not given you a name: choose one for yourself, and tell the other members what it is.` |
 | One member | `You are {name}, the only agent in this swarm.` | `You are the only agent in this swarm. The swarm has not given you a name: choose one for yourself.` |
 
-The rest of the preamble is as today. **The role line stays** (decision: Ransom, 2026-10-22: "role is fine"): `Your role: {role}.` is the eval author's assignment of what the member does, not who it is, and a study of naming wants roles held fixed while names vary. An eval that wants no role leaves `role` unset.
+The rest of the preamble is as today, except the filesystem channel's scratch sentence, which changes for every member of a roster in which some member chooses ([The `filesystem` channel](#the-filesystem-channel)). **The role line stays** (decision: Ransom, 2026-10-22: "role is fine"): `Your role: {role}.` is the eval author's assignment of what the member does, not who it is, and a study of naming wants roles held fixed while names vary. An eval that wants no role leaves `role` unset.
 
 The sentence asks the member to choose and announce a name, rather than saying nothing, because "members have to choose a name for themselves and tell their peers what it is" is the issue's condition, and because the filesystem channel's scratch convention needs a name to refer to. How the member tells the others is up to it: the notes file, a file in the shared directory, or nothing.
 
@@ -156,7 +156,7 @@ The name a member chose is **not** recorded. The swarm never learns it: the memb
 ### Errors and edge cases
 
 - `choose_name=True` with a single member: the one-member sentence above.
-- `choose_name=True` with `channels=[]`: the preamble is the first paragraph, role and budget sentences only. Members still share the sample's sandbox, as today.
+- `choose_name=True` with `channels=[]`: no channel instructions are added. Members without `sandbox=` share the sample's sandbox; members with their own sandboxes (`member(sandbox="{member}")`) keep the existing own-sandbox sentence (`_swarm.py:148-156`) and sandbox routing, as today.
 - `choose_name=True` with per-member sandboxes and `filesystem(shared_volume=True)`: allowed; no name appears. `sandbox="{member}"` still names the environment after the swarm's name, which the swarm does not show.
 - `choose_name=True` with a bridged member: allowed with `filesystem`; bridged members cannot use channels with records anyway.
 - A mixed roster: named members keep the unchanged first paragraph, and with the filesystem channel get the mixed-roster scratch sentence above.
@@ -195,7 +195,7 @@ The name a member chose is **not** recorded. The swarm never learns it: the memb
 
 All in inspect_swarm, with mockllm and stub agents, on asyncio and trio, with no network or Docker:
 
-- `tests/test_channel.py`: the preamble of a `choose_name=True` member, for two members and for one, with and without a role, with `filesystem()` (default and a custom `scratch`), `filesystem(shared_volume=True)` (with member sandboxes, as `tests/test_member_sandboxes.py` builds them) and `channels=[]`: it contains the new first sentence, the role line when set, the chooser's scratch sentence with `<your name>`, and none of the members' assigned names (`react-1`, ..., checked against every member's name, not just its own). The existing `preamble_recorder` reads the name from the preamble, so the new cases record by the member's `MemberContext` name or by call order instead.
+- `tests/test_channel.py`: the preamble of a `choose_name=True` member, for two members and for one, with and without a role, with `filesystem()` (default and a custom `scratch`), `filesystem(shared_volume=True)` (with member sandboxes, as `tests/test_member_sandboxes.py` builds them) and `channels=[]`, both with the shared sample sandbox and with per-member sandboxes (`sandbox="{member}"`, where the own-sandbox sentence stays): it contains the new first sentence, the role line when set, the chooser's scratch sentence with `<your name>`, and none of the members' assigned names (`react-1`, ..., checked against every member's name, not just its own). The existing `preamble_recorder` reads the name from the preamble, so the new cases record by the member's `MemberContext` name or by call order instead.
 - `tests/test_channel.py`, mixed roster: a member named `lead` beside a counted record with `choose_name=True`. The lead's first paragraph is unchanged and its scratch sentence is the mixed-roster one (`/scratch/lead`, without "which no other member uses"); the choosers get theirs. The existing all-named cases in `test_each_member_gets_each_channels_instructions` stay as they are, which shows that all-named preambles are unchanged.
 - `tests/test_channel.py`, refusals: `swarm()` refuses `channel_test_locks()` (whose instructions use `member.name`) and the constant-instructions channel of `tests/test_bus.py` beside a `choose_name` member, with the message above, and accepts both when no member chooses.
 - `tests/test_shared_memory_channel.py`: `swarm()` refuses `shared_memory()` with a `choose_name` member, and with a mixed roster where only one member chooses, also when `filesystem` is listed too; the message names the member and the channel.
