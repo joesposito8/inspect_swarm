@@ -6,7 +6,7 @@
 
 Columns for `inspect_ai.analysis.samples_df()` with each sample’s realized cost and what the swarm’s ledger says about it, as in `samples_df(logs, columns=SampleSummary + SwarmColumns)`. The `inspect_swarm.analysis` module docstring lists every column.
 
-[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/analysis/_columns.py#L111)
+[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/analysis/_columns.py#L111)
 
 ``` python
 SwarmColumns: list[Column] = [
@@ -30,7 +30,7 @@ SwarmColumns: list[Column] = [
 
 Read the swarm’s ledger from a sample.
 
-[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/analysis/_columns.py#L14)
+[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/analysis/_columns.py#L14)
 
 ``` python
 def swarm_ledger(sample: EvalSample) -> SwarmLedger | None
@@ -47,7 +47,7 @@ The swarm writes its ledger once, when it ends, to the sample store as `inspect_
 
 The store entry’s shape follows `version`. This inspect_swarm reads version 1 only.
 
-[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_ledger.py#L119)
+[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_ledger.py#L119)
 
 ``` python
 class SwarmLedger(BaseModel)
@@ -125,7 +125,7 @@ No call is known to be missing from the swarm’s usage and cost: no member, mem
 
 One member’s entry in the swarm’s ledger.
 
-[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_ledger.py#L89)
+[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_ledger.py#L89)
 
 ``` python
 class MemberLedger(BaseModel)
@@ -163,7 +163,7 @@ Usage and cost recorded by one of the swarm’s meters.
 
 A meter counts the model calls made in its context: one member’s, the runtime’s, the final step’s, or the whole swarm’s.
 
-[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_ledger.py#L47)
+[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_ledger.py#L47)
 
 ``` python
 class Meter(BaseModel)
@@ -186,7 +186,7 @@ Counts of the model events in the swarm, or in one member’s spans.
 
 `errored`, `no_usage` and `unpriced` count calls whose cost is missing, so any of them above zero makes the cost a lower bound.
 
-[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_ledger.py#L65)
+[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_ledger.py#L65)
 
 ``` python
 class Calls(BaseModel)

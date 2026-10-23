@@ -8,7 +8,7 @@ A swarm of agents working on one sample.
 
 Each member gets a timeline in the sample named after it, so member names must be unique across the swarm runs and other timelines in a sample. To run swarms more than once in one sample, build them with distinct member names. A member may not be named `init`, `solvers` or `scorers`: Inspect’s timelines read spans with those names as the sample’s phases.
 
-[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_swarm.py#L38)
+[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_swarm.py#L38)
 
 ``` python
 @agent
@@ -59,7 +59,7 @@ Background work belongs to the member. Work its agent starts with [background()]
 
 ACP agents, which wait for their caller to drive them rather than returning, are refused: a built one when [member()](../reference/inspect_swarm.html.md#member) is called, and a factory’s when the member is built.
 
-[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_member.py#L198)
+[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_member.py#L198)
 
 ``` python
 def member(
@@ -117,7 +117,7 @@ By default the swarm stops when the first member submits. The swarm’s answer i
 
 Pass `stop_on_submission=False` to let every member run to its end when the other members’ work still matters: tasks whose scorer reads a shared artifact (such as the sandbox) after the members end, where members still working change what is scored; arms that measure each member’s result (<team@k>); and agents for which any normal return counts as a submission, so that a member that gives up would end the swarm. Add `final="last"` to make the latest submission the answer, for a team whose members build on each other’s work.
 
-[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_controller/leaderless.py#L8)
+[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_controller/leaderless.py#L8)
 
 ``` python
 @swarm_controller
@@ -138,7 +138,7 @@ Decorator for registering swarm controllers.
 
 The factory’s arguments are recorded with the controller, so they appear in the log and the controller can be rebuilt from it. A factory in a package is registered as `<package>/<name>`.
 
-[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_controller/_controller.py#L64)
+[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_controller/_controller.py#L64)
 
 ``` python
 def swarm_controller(
@@ -161,7 +161,7 @@ How a swarm runs: which members start, when and with what input, and when the sw
 
 A [Controller](../reference/inspect_swarm.html.md#controller) holds configuration only: one object serves every sample, so per-sample state belongs in `run`’s local variables. Return one from a factory decorated with `@swarm_controller`.
 
-[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_controller/_controller.py#L25)
+[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_controller/_controller.py#L25)
 
 ``` python
 class Controller
@@ -172,7 +172,7 @@ class Controller
 \_\_init\_\_  
 Create a controller.
 
-[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_controller/_controller.py#L31)
+[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_controller/_controller.py#L31)
 
 ``` python
 def __init__(
@@ -197,7 +197,7 @@ Called with the roster when the swarm is built. Raise `ValueError` for a roster 
 
 What a controller’s `run` works through: the swarm’s members and their events, for one sample.
 
-[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_controller/_control.py#L99)
+[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_controller/_control.py#L99)
 
 ``` python
 class SwarmControl(Protocol)
@@ -213,7 +213,7 @@ The members, in roster order.
 member  
 The member with this name.
 
-[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_controller/_control.py#L107)
+[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_controller/_control.py#L107)
 
 ``` python
 def member(self, name: str) -> MemberHandle
@@ -227,7 +227,7 @@ Start a member, and return at once.
 
 The member runs in its own task, span and tool-state scope, with its limits. Its input is `input`, or the swarm’s input when `input` is `None`, followed by the member’s preamble: its name, role and roster size, how the budget is split, and each channel’s instructions.
 
-[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_controller/_control.py#L118)
+[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_controller/_control.py#L118)
 
 ``` python
 def start(
@@ -246,7 +246,7 @@ The swarm’s events, in order from the swarm’s start.
 
 Each event is yielded once. The iterator ends when no member is running and no event is waiting; a member started later is reported by a new `events()` call. Use one iterator at a time: an iterator holds the events from its first step until it ends or is closed (`aclose()`, or leaving a `contextlib.aclosing()` block).
 
-[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_controller/_control.py#L135)
+[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_controller/_control.py#L135)
 
 ``` python
 def events(self) -> AsyncGenerator[SwarmEvent, None]
@@ -257,7 +257,7 @@ Make this member’s submission the swarm’s answer, in place of the controller
 
 The choice is the provisional answer from now on and the final answer when the swarm ends. The result record and the `final` event give the mode `controller`, the member and `reason`. Choose once, from a member that has ended with a submission.
 
-[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_controller/_control.py#L145)
+[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_controller/_control.py#L145)
 
 ``` python
 def choose_answer(
@@ -275,7 +275,7 @@ Why the controller chose it, for the record.
 
 A member as a controller sees it: its name, role, state and status, never its text.
 
-[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_controller/_control.py#L52)
+[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_controller/_control.py#L52)
 
 ``` python
 class MemberHandle(Protocol)
@@ -302,7 +302,7 @@ Whether the member ended with a submission (status `submitted`).
 
 A member ended.
 
-[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_controller/_control.py#L81)
+[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_controller/_control.py#L81)
 
 ``` python
 @dataclass(frozen=True)
@@ -324,7 +324,7 @@ Whether it ended with a submission.
 
 An event a controller receives from `SwarmControl.events()`. Later versions add kinds, so test an event’s type before reading its fields.
 
-[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_controller/_control.py#L95)
+[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_controller/_control.py#L95)
 
 ``` python
 SwarmEvent = MemberEnded
@@ -334,7 +334,7 @@ SwarmEvent = MemberEnded
 
 A member as the controller’s `check` and a channel’s `instructions()` see it.
 
-[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_controller/_controller.py#L14)
+[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_controller/_controller.py#L14)
 
 ``` python
 @dataclass(frozen=True)
@@ -353,7 +353,7 @@ The member’s role, if it has one.
 
 A member’s lifecycle: not started, running, or ended.
 
-[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_record.py#L6)
+[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_record.py#L6)
 
 ``` python
 MemberState = Literal["pending", "running", "ended"]
@@ -363,7 +363,7 @@ MemberState = Literal["pending", "running", "ended"]
 
 Why a controller’s `run` returned: a topology reason such as `all_done`, or the controller’s own, recorded as `controller:<reason>`.
 
-[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_controller/_controller.py#L10)
+[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_controller/_controller.py#L10)
 
 ``` python
 StopReason = str
@@ -373,7 +373,7 @@ StopReason = str
 
 How the swarm chooses its answer from the submissions: `first`, the earliest, or `last`, the latest. A tie goes to the member listed first in the roster.
 
-[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_final.py#L11)
+[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_final.py#L11)
 
 ``` python
 FinalName = Literal["first", "last"]
@@ -391,7 +391,7 @@ With `shared_volume=True` it describes members with their own sandboxes (`member
 
 The channel adds no tools and does not create the directories.
 
-[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_channel/filesystem.py#L35)
+[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_channel/filesystem.py#L35)
 
 ``` python
 @swarm_channel
@@ -425,7 +425,7 @@ The board lives for one run of the swarm. Its bounds keep every file viewable wh
 
 Each member, and each of its subagents, also gets `swarm_wait`, which blocks until a file it watches has a change it has not viewed, another member ends, every member is waiting, the swarm stops, or a timeout passes. A wait is wall-clock time inside a tool call: it counts towards the member’s time limit, the swarm’s time cap, and the sample’s time and working limits. It makes no model call, so it adds no tokens, cost or steps.
 
-[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_channel/shared_memory.py#L117)
+[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_channel/shared_memory.py#L117)
 
 ``` python
 @swarm_channel
@@ -465,7 +465,7 @@ Pass it in the member’s tools, `react(tools=[bash(), swarm_tools()])`. The mem
 
 The same member definition serves swarms with different channels, and one with none. Outside a swarm it gives no tools.
 
-[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_bus/_tools.py#L37)
+[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_bus/_tools.py#L37)
 
 ``` python
 def swarm_tools() -> ToolSource
@@ -479,7 +479,7 @@ Pass it as the member’s hook, `react(on_continue=swarm_on_continue())`, or aro
 
 Only the member’s own loop gets notices, not its subagents. Outside a swarm, or for a member in `poll` mode, it adds nothing.
 
-[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_bus/_notice.py#L13)
+[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_bus/_notice.py#L13)
 
 ``` python
 def swarm_on_continue(
@@ -501,7 +501,7 @@ Decorator for registering swarm channels.
 
 The factory’s arguments are recorded with the channel, so they appear in the log and the channel can be rebuilt from it. A factory in a package is registered as `<package>/<name>`.
 
-[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_channel/_channel.py#L245)
+[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_channel/_channel.py#L245)
 
 ``` python
 def swarm_channel(
@@ -523,7 +523,7 @@ Subclass it and override `instructions()`, and return an instance from a factory
 
 A channel with tools and records also sets `name` and `prefix` and overrides `open()`, which gives each run of the swarm its own [ChannelState](../reference/inspect_swarm.html.md#channelstate). A channel that only adds instructions, such as [filesystem()](../reference/inspect_swarm.html.md#filesystem), leaves them unset.
 
-[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_channel/_channel.py#L27)
+[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_channel/_channel.py#L27)
 
 ``` python
 class Channel
@@ -551,7 +551,7 @@ This channel’s contribution to the longest `swarm_wait`, in seconds, or `None`
 check  
 Check the roster when [swarm()](../reference/inspect_swarm.html.md#swarm) is called.
 
-[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_channel/_channel.py#L50)
+[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_channel/_channel.py#L50)
 
 ``` python
 def check(self, roster: Sequence[MemberInfo]) -> None
@@ -563,7 +563,7 @@ The swarm’s members.
 open  
 Open the channel’s state for one run of the swarm, before any member starts.
 
-[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_channel/_channel.py#L61)
+[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_channel/_channel.py#L61)
 
 ``` python
 def open(self, run: "ChannelRun") -> "ChannelState | None"
@@ -575,7 +575,7 @@ The run’s bus and roster.
 instructions  
 Text for the member’s preamble.
 
-[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_channel/_channel.py#L72)
+[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_channel/_channel.py#L72)
 
 ``` python
 def instructions(self, member: MemberInfo) -> str | None
@@ -588,7 +588,7 @@ The member the text is for.
 
 What `Channel.open()` gets for one run of the swarm.
 
-[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_channel/_channel.py#L84)
+[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_channel/_channel.py#L84)
 
 ``` python
 @dataclass(frozen=True)
@@ -609,7 +609,7 @@ A channel’s state in one run of the swarm, which only the bus changes.
 
 The bus calls `validate()`, `admit()` and `apply()` with no `await` between them, so `admit()` sees the state that `apply()` changes.
 
-[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_channel/_channel.py#L106)
+[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_channel/_channel.py#L106)
 
 ``` python
 class ChannelState(Protocol)
@@ -620,7 +620,7 @@ class ChannelState(Protocol)
 tools  
 The channel’s tools, which deliver records through the run’s bus.
 
-[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_channel/_channel.py#L112)
+[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_channel/_channel.py#L112)
 
 ``` python
 def tools(self) -> list[Tool]
@@ -629,7 +629,7 @@ def tools(self) -> list[Tool]
 validate  
 Check a record’s payload and operation data, before the record gets an id.
 
-[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_channel/_channel.py#L116)
+[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_channel/_channel.py#L116)
 
 ``` python
 def validate(self, record: Record) -> None
@@ -641,7 +641,7 @@ The record.
 admit  
 Check a record against the state as it is now, after the storm controls.
 
-[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_channel/_channel.py#L127)
+[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_channel/_channel.py#L127)
 
 ``` python
 def admit(self, record: Record) -> None
@@ -653,7 +653,7 @@ The record.
 apply  
 Apply an admitted record to the state. It cannot fail.
 
-[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_channel/_channel.py#L138)
+[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_channel/_channel.py#L138)
 
 ``` python
 def apply(self, record: Record) -> tuple[list[str], Mapping[str, JsonValue] | None]
@@ -667,7 +667,7 @@ The lines of the member’s next notice, which they then cover.
 
 Called at the member’s turn boundary, only when the notice will be added, so a line covers what it names: the next call leaves it out until it changes again.
 
-[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_channel/_channel.py#L149)
+[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_channel/_channel.py#L149)
 
 ``` python
 def notice_lines(self, member: str) -> list[NoticeLine]
@@ -682,7 +682,7 @@ The state of a channel whose records wake waits (one that sets `Channel.max_wait
 
 The bus calls these methods with no `await` around them. None of them marks anything: a loop acknowledges what a wait names by reading it with the channel’s own tool.
 
-[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_channel/_channel.py#L194)
+[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_channel/_channel.py#L194)
 
 ``` python
 class WaitingState(ChannelState, Protocol)
@@ -693,7 +693,7 @@ class WaitingState(ChannelState, Protocol)
 tools  
 The channel’s tools, which deliver records through the run’s bus.
 
-[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_channel/_channel.py#L112)
+[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_channel/_channel.py#L112)
 
 ``` python
 def tools(self) -> list[Tool]
@@ -702,7 +702,7 @@ def tools(self) -> list[Tool]
 validate  
 Check a record’s payload and operation data, before the record gets an id.
 
-[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_channel/_channel.py#L116)
+[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_channel/_channel.py#L116)
 
 ``` python
 def validate(self, record: Record) -> None
@@ -714,7 +714,7 @@ The record.
 admit  
 Check a record against the state as it is now, after the storm controls.
 
-[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_channel/_channel.py#L127)
+[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_channel/_channel.py#L127)
 
 ``` python
 def admit(self, record: Record) -> None
@@ -726,7 +726,7 @@ The record.
 apply  
 Apply an admitted record to the state. It cannot fail.
 
-[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_channel/_channel.py#L138)
+[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_channel/_channel.py#L138)
 
 ``` python
 def apply(self, record: Record) -> tuple[list[str], Mapping[str, JsonValue] | None]
@@ -740,7 +740,7 @@ The lines of the member’s next notice, which they then cover.
 
 Called at the member’s turn boundary, only when the notice will be added, so a line covers what it names: the next call leaves it out until it changes again.
 
-[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_channel/_channel.py#L149)
+[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_channel/_channel.py#L149)
 
 ``` python
 def notice_lines(self, member: str) -> list[NoticeLine]
@@ -752,7 +752,7 @@ The member the notice is for.
 wait_check  
 Check a wait’s filter when the wait is called.
 
-[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_channel/_channel.py#L200)
+[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_channel/_channel.py#L200)
 
 ``` python
 def wait_check(self, spec: WaitSpec) -> None
@@ -764,7 +764,7 @@ The wait.
 wakes  
 Whether a record the channel has just applied made something reportable to a wait.
 
-[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_channel/_channel.py#L211)
+[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_channel/_channel.py#L211)
 
 ``` python
 def wakes(self, spec: WaitSpec, record: Record) -> bool
@@ -779,7 +779,7 @@ The applied record, which has `wake` set.
 news  
 What is reportable to a wait now.
 
-[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_channel/_channel.py#L223)
+[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_channel/_channel.py#L223)
 
 ``` python
 def news(self, spec: WaitSpec) -> WaitNews | None
@@ -792,7 +792,7 @@ The wait.
 
 One call of `swarm_wait`, as the bus asks a [WaitingState](../reference/inspect_swarm.html.md#waitingstate) about it.
 
-[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_channel/_channel.py#L163)
+[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_channel/_channel.py#L163)
 
 ``` python
 @dataclass(frozen=True)
@@ -820,7 +820,7 @@ The shared memory’s filter as the model gave it, or `None` for the whole board
 
 What a channel has for a waiting loop to look at.
 
-[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_channel/_channel.py#L183)
+[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_channel/_channel.py#L183)
 
 ``` python
 @dataclass(frozen=True)
@@ -839,7 +839,7 @@ What `lines` name, for the `waited` evidence.
 
 A line of a member’s notice, which [swarm_on_continue()](../reference/inspect_swarm.html.md#swarm_on_continue) adds at the member’s turn boundary.
 
-[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_channel/_channel.py#L95)
+[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_channel/_channel.py#L95)
 
 ``` python
 @dataclass(frozen=True)
@@ -860,7 +860,7 @@ One communication through the bus: a message, a write, a claim.
 
 A channel’s tool hands the bus a `Draft`; the bus makes the record, binding the sender and resolving the addresses, and gives it to the channel.
 
-[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_bus/_record.py#L20)
+[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_bus/_record.py#L20)
 
 ``` python
 @dataclass(frozen=True)
@@ -916,7 +916,7 @@ A tool that reports the swarm’s budget to the member that calls it.
 
 It shows the caps that will stop the swarm, how much all members have used, the member’s own share when the budget is split, and the time cap. Use it in place of a tool that reads [sample_limits()](https://inspect.aisi.org.uk/reference/inspect_ai.util.html#sample_limits), which shows the sample’s limits rather than the swarm’s caps.
 
-[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_tools.py#L8)
+[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_tools.py#L8)
 
 ``` python
 @tool
@@ -929,7 +929,7 @@ The budget of the swarm the caller runs in.
 
 Reports the swarm’s cap per kind and how much of it the whole swarm has used, and, when the budget is split and the caller is a member, the member’s share and its usage. The caps are the ones that stop the swarm, which [sample_limits()](https://inspect.aisi.org.uk/reference/inspect_ai.util.html#sample_limits) does not show: the swarm holds back part of each sample limit.
 
-[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_budget.py#L667)
+[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_budget.py#L667)
 
 ``` python
 def swarm_budget() -> SwarmBudget
@@ -939,7 +939,7 @@ def swarm_budget() -> SwarmBudget
 
 The swarm’s budget as a member sees it, from [swarm_budget()](../reference/inspect_swarm.html.md#swarm_budget).
 
-[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_budget.py#L630)
+[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_budget.py#L630)
 
 ``` python
 @dataclass(frozen=True)
@@ -967,7 +967,7 @@ The time cap, and the seconds since the swarm started, or `None` when the swarm 
 
 One capped kind of the swarm’s budget, and what has been used of it.
 
-[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_budget.py#L613)
+[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_budget.py#L613)
 
 ``` python
 @dataclass(frozen=True)

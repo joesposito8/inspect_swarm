@@ -672,7 +672,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>A swarm of agents working on one sample.</p>
 <p>Each member gets a timeline in the sample named after it, so member names must be unique across the swarm runs and other timelines in a sample. To run swarms more than once in one sample, build them with distinct member names. A member may not be named <code>init</code>, <code>solvers</code> or <code>scorers</code>: Inspect’s timelines read spans with those names as the sample’s phases.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_swarm.py#L38">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_swarm.py#L38">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="at">@agent</span></span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> swarm(</span>
@@ -716,7 +716,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Background work belongs to the member. Work its agent starts with <span class="element-type-name ref-interlink"><a href="https://inspect.aisi.org.uk/reference/inspect_ai.util.html#background">background()</a></span>, such as <code>deepagent(background=...)</code> subagents, spends through the member’s limits and share, and is the member’s in the ledger. When the member’s agent returns, the swarm stops the background work from starting model calls, gives it the swarm’s grace period to finish calls and tool calls in flight, and cancels what is left. The member ends after that, with the status its agent ended with; <code>Budget.grace=0</code> cancels background work at once. A member time limit bounds its agent only: after the agent returns, its background work gets the grace period too, and the cancelled work’s cleanup is awaited. Background work must be started by the agent while it runs; a factory that starts it while building the agent makes the member <code>errored</code>. A sourceless custom limit error raised in background work ends only the task that raised it; the member’s agent and its other background work continue. Work started outside <span class="element-type-name ref-interlink"><a href="https://inspect.aisi.org.uk/reference/inspect_ai.util.html#background">background()</a></span> (an <code>asyncio</code> task, a process left running in the sandbox) is not stopped. Bridged members cannot have background work: <span class="element-type-name ref-interlink"><a href="https://inspect.aisi.org.uk/reference/inspect_ai.util.html#background">background()</a></span> raises in a member declared or found bridged, and a member that uses the agent bridge after starting background work (through a bridged subagent, for example) is cancelled and ends <code>errored</code>.</p>
 <p>ACP agents, which wait for their caller to drive them rather than returning, are refused: a built one when <span class="element-type-name ref-interlink"><a href="../reference/inspect_swarm.html#member">member()</a></span> is called, and a factory’s when the member is built.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_member.py#L198">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_member.py#L198">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> member(</span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    agent: Agent <span class="op">|</span> AgentFactory,</span>
@@ -783,7 +783,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>By default the swarm stops when the first member submits. The swarm’s answer is the first submission, so nothing the other members do after it can change the answer. The members still running are stopped: they finish the calls they have in flight, within <code>Budget.grace</code>, and the ones still running after it are cancelled.</p>
 <p>Pass <code>stop_on_submission=False</code> to let every member run to its end when the other members’ work still matters: tasks whose scorer reads a shared artifact (such as the sandbox) after the members end, where members still working change what is scored; arms that measure each member’s result (<a href="mailto:team@k" class="email">team@k</a>); and agents for which any normal return counts as a submission, so that a member that gives up would end the swarm. Add <code>final="last"</code> to make the latest submission the answer, for a team whose members build on each other’s work.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_controller/leaderless.py#L8">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_controller/leaderless.py#L8">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="at">@swarm_controller</span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> leaderless(</span>
@@ -805,7 +805,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Decorator for registering swarm controllers.</p>
 <p>The factory’s arguments are recorded with the controller, so they appear in the log and the controller can be rebuilt from it. A factory in a package is registered as <code>&lt;package&gt;/&lt;name&gt;</code>.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_controller/_controller.py#L64">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_controller/_controller.py#L64">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> swarm_controller(</span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    func: Callable[P, Controller] <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>, <span class="op">/</span>, <span class="op">*</span>, name: <span class="bu">str</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span></span>
@@ -829,7 +829,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>How a swarm runs: which members start, when and with what input, and when the swarm is done.</p>
 <p>A <span class="element-type-name ref-interlink"><a href="../reference/inspect_swarm.html#controller">Controller</a></span> holds configuration only: one object serves every sample, so per-sample state belongs in <code>run</code>’s local variables. Return one from a factory decorated with <code>@swarm_controller</code>.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_controller/_controller.py#L25">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_controller/_controller.py#L25">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Controller</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <section class="level4 class-methods">
@@ -839,7 +839,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <dd>
 <p>Create a controller.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_controller/_controller.py#L31">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_controller/_controller.py#L31">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> <span class="fu">__init__</span>(</span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    <span class="va">self</span>,</span>
@@ -870,7 +870,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="swarmcontrol">SwarmControl</h3>
 <p>What a controller’s <code>run</code> works through: the swarm’s members and their events, for one sample.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_controller/_control.py#L99">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_controller/_control.py#L99">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> SwarmControl(Protocol)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <section class="level4">
@@ -889,7 +889,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <dd>
 <p>The member with this name.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_controller/_control.py#L107">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_controller/_control.py#L107">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> member(<span class="va">self</span>, name: <span class="bu">str</span>) <span class="op">-&gt;</span> MemberHandle</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <dl>
@@ -904,7 +904,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Start a member, and return at once.</p>
 <p>The member runs in its own task, span and tool-state scope, with its limits. Its input is <code>input</code>, or the swarm’s input when <code>input</code> is <code>None</code>, followed by the member’s preamble: its name, role and roster size, how the budget is split, and each channel’s instructions.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_controller/_control.py#L118">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_controller/_control.py#L118">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> start(</span>
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>    <span class="va">self</span>, member: <span class="bu">str</span> <span class="op">|</span> MemberHandle, <span class="bu">input</span>: <span class="bu">str</span> <span class="op">|</span> <span class="bu">list</span>[ChatMessage] <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span></span>
@@ -925,7 +925,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>The swarm’s events, in order from the swarm’s start.</p>
 <p>Each event is yielded once. The iterator ends when no member is running and no event is waiting; a member started later is reported by a new <code>events()</code> call. Use one iterator at a time: an iterator holds the events from its first step until it ends or is closed (<code>aclose()</code>, or leaving a <code>contextlib.aclosing()</code> block).</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_controller/_control.py#L135">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_controller/_control.py#L135">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> events(<span class="va">self</span>) <span class="op">-&gt;</span> AsyncGenerator[SwarmEvent, <span class="va">None</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div>
@@ -937,7 +937,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Make this member’s submission the swarm’s answer, in place of the controller’s <code>final</code> rule.</p>
 <p>The choice is the provisional answer from now on and the final answer when the swarm ends. The result record and the <code>final</code> event give the mode <code>controller</code>, the member and <code>reason</code>. Choose once, from a member that has ended with a submission.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_controller/_control.py#L145">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_controller/_control.py#L145">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> choose_answer(</span>
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>    <span class="va">self</span>, member: <span class="bu">str</span> <span class="op">|</span> MemberHandle, reason: <span class="bu">str</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span></span>
@@ -960,7 +960,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="memberhandle">MemberHandle</h3>
 <p>A member as a controller sees it: its name, role, state and status, never its text.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_controller/_control.py#L52">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_controller/_control.py#L52">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> MemberHandle(Protocol)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <section class="level4">
@@ -993,7 +993,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="memberended">MemberEnded</h3>
 <p>A member ended.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_controller/_control.py#L81">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_controller/_control.py#L81">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span>(frozen<span class="op">=</span><span class="va">True</span>)</span>
 <span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> MemberEnded</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -1019,7 +1019,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="swarmevent">SwarmEvent</h3>
 <p>An event a controller receives from <code>SwarmControl.events()</code>. Later versions add kinds, so test an event’s type before reading its fields.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_controller/_control.py#L95">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_controller/_control.py#L95">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>SwarmEvent <span class="op">=</span> MemberEnded</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
@@ -1027,7 +1027,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="memberinfo">MemberInfo</h3>
 <p>A member as the controller’s <code>check</code> and a channel’s <code>instructions()</code> see it.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_controller/_controller.py#L14">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_controller/_controller.py#L14">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span>(frozen<span class="op">=</span><span class="va">True</span>)</span>
 <span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> MemberInfo</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -1049,7 +1049,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="memberstate">MemberState</h3>
 <p>A member’s lifecycle: not started, running, or ended.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_record.py#L6">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_record.py#L6">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>MemberState <span class="op">=</span> Literal[<span class="st">"pending"</span>, <span class="st">"running"</span>, <span class="st">"ended"</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
@@ -1057,7 +1057,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="stopreason">StopReason</h3>
 <p>Why a controller’s <code>run</code> returned: a topology reason such as <code>all_done</code>, or the controller’s own, recorded as <code>controller:&lt;reason&gt;</code>.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_controller/_controller.py#L10">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_controller/_controller.py#L10">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>StopReason <span class="op">=</span> <span class="bu">str</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
@@ -1065,7 +1065,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="finalname">FinalName</h3>
 <p>How the swarm chooses its answer from the submissions: <code>first</code>, the earliest, or <code>last</code>, the latest. A tie goes to the member listed first in the roster.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_final.py#L11">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_final.py#L11">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>FinalName <span class="op">=</span> Literal[<span class="st">"first"</span>, <span class="st">"last"</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
@@ -1079,7 +1079,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>With <code>shared_volume=True</code> it describes members with their own sandboxes (<code>member(sandbox=...)</code>) that each mount one shared volume at <code>shared</code>: <code>shared</code> and the notes file in it are the same directory in every member’s sandbox. There is no scratch directory, since each member’s sandbox is already its own. The swarm cannot check that the volume is mounted in every member’s sandbox; it takes your word for it.</p>
 <p>The channel adds no tools and does not create the directories.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_channel/filesystem.py#L35">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_channel/filesystem.py#L35">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="at">@swarm_channel</span></span>
 <span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> filesystem(</span>
@@ -1114,7 +1114,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>The board lives for one run of the swarm. Its bounds keep every file viewable whole in one result.</p>
 <p>Each member, and each of its subagents, also gets <code>swarm_wait</code>, which blocks until a file it watches has a change it has not viewed, another member ends, every member is waiting, the swarm stops, or a timeout passes. A wait is wall-clock time inside a tool call: it counts towards the member’s time limit, the swarm’s time cap, and the sample’s time and working limits. It makes no model call, so it adds no tokens, cost or steps.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_channel/shared_memory.py#L117">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_channel/shared_memory.py#L117">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="at">@swarm_channel</span></span>
 <span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> shared_memory(</span>
@@ -1158,7 +1158,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Pass it in the member’s tools, <code>react(tools=[bash(), swarm_tools()])</code>. The member’s own loop gets the tools of every channel of the swarm that has them; its nested loops, such as a <span class="element-type-name ref-interlink"><a href="https://inspect.aisi.org.uk/reference/inspect_ai.agent.html#deepagent">deepagent()</a></span> member’s subagents, get only those of channels whose <code>reach</code> is <code>"member"</code>. A loop also gets <code>swarm_wait</code>, which waits for other members’ work, when one of the channels it reaches wakes waits, as <span class="element-type-name ref-interlink"><a href="../reference/inspect_swarm.html#shared_memory">shared_memory()</a></span> does. The member’s own loop is the first in which the tools are resolved, which for <span class="element-type-name ref-interlink"><a href="https://inspect.aisi.org.uk/reference/inspect_ai.agent.html#react">react()</a></span> and <span class="element-type-name ref-interlink"><a href="https://inspect.aisi.org.uk/reference/inspect_ai.agent.html#deepagent">deepagent()</a></span> members is their top-level loop. Each tool acts as the member, whichever loop calls it.</p>
 <p>The same member definition serves swarms with different channels, and one with none. Outside a swarm it gives no tools.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_bus/_tools.py#L37">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_bus/_tools.py#L37">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> swarm_tools() <span class="op">-&gt;</span> ToolSource</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
@@ -1168,7 +1168,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Pass it as the member’s hook, <code>react(on_continue=swarm_on_continue())</code>, or around the hook the member would otherwise have, <code>swarm_on_continue(inner)</code>. The member then continues or stops exactly as it would without it. At each of its turn boundaries, unless it is stopping, a member in <code>notify</code> mode gets a notice of what changed in the swarm’s channels since its last notice, such as shared memory files other agents wrote. A notice is a user message with fixed text: counts, ids such as <code>f-3</code> and member names, never what a member wrote.</p>
 <p>Only the member’s own loop gets notices, not its subagents. Outside a swarm, or for a member in <code>poll</code> mode, it adds nothing.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_bus/_notice.py#L13">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_bus/_notice.py#L13">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> swarm_on_continue(</span>
 <span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>    inner: <span class="bu">str</span> <span class="op">|</span> AgentContinue <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
@@ -1191,7 +1191,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Decorator for registering swarm channels.</p>
 <p>The factory’s arguments are recorded with the channel, so they appear in the log and the channel can be rebuilt from it. A factory in a package is registered as <code>&lt;package&gt;/&lt;name&gt;</code>.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_channel/_channel.py#L245">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_channel/_channel.py#L245">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> swarm_channel(</span>
 <span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>    func: Callable[P, Channel] <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>, <span class="op">/</span>, <span class="op">*</span>, name: <span class="bu">str</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span></span>
@@ -1213,7 +1213,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Subclass it and override <code>instructions()</code>, and return an instance from a factory decorated with <code>@swarm_channel</code>. A <span class="element-type-name ref-interlink"><a href="../reference/inspect_swarm.html#channel">Channel</a></span> holds configuration only: one object serves every sample.</p>
 <p>A channel with tools and records also sets <code>name</code> and <code>prefix</code> and overrides <code>open()</code>, which gives each run of the swarm its own <span class="element-type-name ref-interlink"><a href="../reference/inspect_swarm.html#channelstate">ChannelState</a></span>. A channel that only adds instructions, such as <span class="element-type-name ref-interlink"><a href="../reference/inspect_swarm.html#filesystem">filesystem()</a></span>, leaves them unset.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_channel/_channel.py#L27">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_channel/_channel.py#L27">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Channel</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <section class="level4">
@@ -1248,7 +1248,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <dd>
 <p>Check the roster when <span class="element-type-name ref-interlink"><a href="../reference/inspect_swarm.html#swarm">swarm()</a></span> is called.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_channel/_channel.py#L50">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_channel/_channel.py#L50">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb25"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> check(<span class="va">self</span>, roster: Sequence[MemberInfo]) <span class="op">-&gt;</span> <span class="va">None</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <dl>
@@ -1262,7 +1262,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <dd>
 <p>Open the channel’s state for one run of the swarm, before any member starts.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_channel/_channel.py#L61">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_channel/_channel.py#L61">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb26"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> <span class="bu">open</span>(<span class="va">self</span>, run: <span class="st">"ChannelRun"</span>) <span class="op">-&gt;</span> <span class="st">"ChannelState | None"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <dl>
@@ -1276,7 +1276,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <dd>
 <p>Text for the member’s preamble.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_channel/_channel.py#L72">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_channel/_channel.py#L72">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb27"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> instructions(<span class="va">self</span>, member: MemberInfo) <span class="op">-&gt;</span> <span class="bu">str</span> <span class="op">|</span> <span class="va">None</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <dl>
@@ -1293,7 +1293,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="channelrun">ChannelRun</h3>
 <p>What <code>Channel.open()</code> gets for one run of the swarm.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_channel/_channel.py#L84">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_channel/_channel.py#L84">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb28"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span>(frozen<span class="op">=</span><span class="va">True</span>)</span>
 <span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> ChannelRun</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -1316,7 +1316,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>A channel’s state in one run of the swarm, which only the bus changes.</p>
 <p>The bus calls <code>validate()</code>, <code>admit()</code> and <code>apply()</code> with no <code>await</code> between them, so <code>admit()</code> sees the state that <code>apply()</code> changes.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_channel/_channel.py#L106">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_channel/_channel.py#L106">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb29"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> ChannelState(Protocol)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <section class="level4 class-methods">
@@ -1326,7 +1326,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <dd>
 <p>The channel’s tools, which deliver records through the run’s bus.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_channel/_channel.py#L112">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_channel/_channel.py#L112">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb30"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> tools(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">list</span>[Tool]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div>
@@ -1337,7 +1337,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <dd>
 <p>Check a record’s payload and operation data, before the record gets an id.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_channel/_channel.py#L116">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_channel/_channel.py#L116">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb31"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> validate(<span class="va">self</span>, record: Record) <span class="op">-&gt;</span> <span class="va">None</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <dl>
@@ -1351,7 +1351,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <dd>
 <p>Check a record against the state as it is now, after the storm controls.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_channel/_channel.py#L127">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_channel/_channel.py#L127">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb32"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> admit(<span class="va">self</span>, record: Record) <span class="op">-&gt;</span> <span class="va">None</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <dl>
@@ -1365,7 +1365,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <dd>
 <p>Apply an admitted record to the state. It cannot fail.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_channel/_channel.py#L138">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_channel/_channel.py#L138">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb33"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> <span class="bu">apply</span>(<span class="va">self</span>, record: Record) <span class="op">-&gt;</span> <span class="bu">tuple</span>[<span class="bu">list</span>[<span class="bu">str</span>], Mapping[<span class="bu">str</span>, JsonValue] <span class="op">|</span> <span class="va">None</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <dl>
@@ -1380,7 +1380,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>The lines of the member’s next notice, which they then cover.</p>
 <p>Called at the member’s turn boundary, only when the notice will be added, so a line covers what it names: the next call leaves it out until it changes again.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_channel/_channel.py#L149">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_channel/_channel.py#L149">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb34"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> notice_lines(<span class="va">self</span>, member: <span class="bu">str</span>) <span class="op">-&gt;</span> <span class="bu">list</span>[NoticeLine]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <dl>
@@ -1398,7 +1398,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>The state of a channel whose records wake waits (one that sets <code>Channel.max_wait</code>).</p>
 <p>The bus calls these methods with no <code>await</code> around them. None of them marks anything: a loop acknowledges what a wait names by reading it with the channel’s own tool.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_channel/_channel.py#L194">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_channel/_channel.py#L194">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb35"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> WaitingState(ChannelState, Protocol)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <section class="level4 class-methods">
@@ -1408,7 +1408,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <dd>
 <p>The channel’s tools, which deliver records through the run’s bus.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_channel/_channel.py#L112">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_channel/_channel.py#L112">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb36"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> tools(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">list</span>[Tool]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div>
@@ -1419,7 +1419,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <dd>
 <p>Check a record’s payload and operation data, before the record gets an id.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_channel/_channel.py#L116">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_channel/_channel.py#L116">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb37"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> validate(<span class="va">self</span>, record: Record) <span class="op">-&gt;</span> <span class="va">None</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <dl>
@@ -1433,7 +1433,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <dd>
 <p>Check a record against the state as it is now, after the storm controls.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_channel/_channel.py#L127">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_channel/_channel.py#L127">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb38"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> admit(<span class="va">self</span>, record: Record) <span class="op">-&gt;</span> <span class="va">None</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <dl>
@@ -1447,7 +1447,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <dd>
 <p>Apply an admitted record to the state. It cannot fail.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_channel/_channel.py#L138">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_channel/_channel.py#L138">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb39"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> <span class="bu">apply</span>(<span class="va">self</span>, record: Record) <span class="op">-&gt;</span> <span class="bu">tuple</span>[<span class="bu">list</span>[<span class="bu">str</span>], Mapping[<span class="bu">str</span>, JsonValue] <span class="op">|</span> <span class="va">None</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <dl>
@@ -1462,7 +1462,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>The lines of the member’s next notice, which they then cover.</p>
 <p>Called at the member’s turn boundary, only when the notice will be added, so a line covers what it names: the next call leaves it out until it changes again.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_channel/_channel.py#L149">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_channel/_channel.py#L149">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb40"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> notice_lines(<span class="va">self</span>, member: <span class="bu">str</span>) <span class="op">-&gt;</span> <span class="bu">list</span>[NoticeLine]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <dl>
@@ -1476,7 +1476,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <dd>
 <p>Check a wait’s filter when the wait is called.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_channel/_channel.py#L200">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_channel/_channel.py#L200">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb41"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> wait_check(<span class="va">self</span>, spec: WaitSpec) <span class="op">-&gt;</span> <span class="va">None</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <dl>
@@ -1490,7 +1490,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <dd>
 <p>Whether a record the channel has just applied made something reportable to a wait.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_channel/_channel.py#L211">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_channel/_channel.py#L211">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb42"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> wakes(<span class="va">self</span>, spec: WaitSpec, record: Record) <span class="op">-&gt;</span> <span class="bu">bool</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <dl>
@@ -1508,7 +1508,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <dd>
 <p>What is reportable to a wait now.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_channel/_channel.py#L223">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_channel/_channel.py#L223">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb43"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> news(<span class="va">self</span>, spec: WaitSpec) <span class="op">-&gt;</span> WaitNews <span class="op">|</span> <span class="va">None</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <dl>
@@ -1525,7 +1525,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="waitspec">WaitSpec</h3>
 <p>One call of <code>swarm_wait</code>, as the bus asks a <span class="element-type-name ref-interlink"><a href="../reference/inspect_swarm.html#waitingstate">WaitingState</a></span> about it.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_channel/_channel.py#L163">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_channel/_channel.py#L163">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb44"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span>(frozen<span class="op">=</span><span class="va">True</span>)</span>
 <span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> WaitSpec</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -1559,7 +1559,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="waitnews">WaitNews</h3>
 <p>What a channel has for a waiting loop to look at.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_channel/_channel.py#L183">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_channel/_channel.py#L183">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb45"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span>(frozen<span class="op">=</span><span class="va">True</span>)</span>
 <span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> WaitNews</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -1581,7 +1581,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="noticeline">NoticeLine</h3>
 <p>A line of a member’s notice, which <span class="element-type-name ref-interlink"><a href="../reference/inspect_swarm.html#swarm_on_continue">swarm_on_continue()</a></span> adds at the member’s turn boundary.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_channel/_channel.py#L95">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_channel/_channel.py#L95">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb46"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span>(frozen<span class="op">=</span><span class="va">True</span>)</span>
 <span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> NoticeLine</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -1604,7 +1604,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>One communication through the bus: a message, a write, a claim.</p>
 <p>A channel’s tool hands the bus a <code>Draft</code>; the bus makes the record, binding the sender and resolving the addresses, and gives it to the channel.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_bus/_record.py#L20">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_bus/_record.py#L20">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb47"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span>(frozen<span class="op">=</span><span class="va">True</span>)</span>
 <span id="cb47-2"><a href="#cb47-2" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Record</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -1674,7 +1674,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>A tool that reports the swarm’s budget to the member that calls it.</p>
 <p>It shows the caps that will stop the swarm, how much all members have used, the member’s own share when the budget is split, and the time cap. Use it in place of a tool that reads <span class="element-type-name ref-interlink"><a href="https://inspect.aisi.org.uk/reference/inspect_ai.util.html#sample_limits">sample_limits()</a></span>, which shows the sample’s limits rather than the swarm’s caps.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_tools.py#L8">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_tools.py#L8">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb48"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a><span class="at">@tool</span></span>
 <span id="cb48-2"><a href="#cb48-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> swarm_resources() <span class="op">-&gt;</span> Tool</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -1684,7 +1684,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>The budget of the swarm the caller runs in.</p>
 <p>Reports the swarm’s cap per kind and how much of it the whole swarm has used, and, when the budget is split and the caller is a member, the member’s share and its usage. The caps are the ones that stop the swarm, which <span class="element-type-name ref-interlink"><a href="https://inspect.aisi.org.uk/reference/inspect_ai.util.html#sample_limits">sample_limits()</a></span> does not show: the swarm holds back part of each sample limit.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_budget.py#L667">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_budget.py#L667">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb49"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> swarm_budget() <span class="op">-&gt;</span> SwarmBudget</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
@@ -1692,7 +1692,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="swarmbudget">SwarmBudget</h3>
 <p>The swarm’s budget as a member sees it, from <span class="element-type-name ref-interlink"><a href="../reference/inspect_swarm.html#swarm_budget">swarm_budget()</a></span>.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_budget.py#L630">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_budget.py#L630">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb50"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span>(frozen<span class="op">=</span><span class="va">True</span>)</span>
 <span id="cb50-2"><a href="#cb50-2" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> SwarmBudget</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -1726,7 +1726,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="budgetusage">BudgetUsage</h3>
 <p>One capped kind of the swarm’s budget, and what has been used of it.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_budget.py#L613">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_budget.py#L613">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb51"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span>(frozen<span class="op">=</span><span class="va">True</span>)</span>
 <span id="cb51-2"><a href="#cb51-2" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> BudgetUsage</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>

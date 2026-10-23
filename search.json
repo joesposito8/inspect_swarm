@@ -626,7 +626,7 @@
     "href": "index.html",
     "title": "Inspect Swarm",
     "section": "",
-    "text": "Inspect Swarm runs a swarm of agents on one sample of an Inspect task. A swarm is an Inspect agent, so it replaces the task’s solver, and the task’s scorer scores the swarm’s answer.\n\n\n\n\n\n\nWarning\n\n\n\nInspect Swarm is experimental and under active development. It has no stable API and no releases yet, and it may change or be withdrawn without notice.",
+    "text": "Inspect Swarm runs a swarm of agents on one sample of an Inspect task. A swarm is an Inspect agent, so it replaces the task’s solver, and the task’s scorer scores the swarm’s answer.\n\n\n\n\n\n\nWarning\n\n\n\nEverything in Inspect Swarm is experimental and may change in any release without notice, including swarm(), member(), Budget, the built-in controller and channel names, and the record and evidence formats. No support is guaranteed.",
     "crumbs": [
       "Reference",
       "Basics",
@@ -638,7 +638,7 @@
     "href": "index.html#welcome",
     "title": "Inspect Swarm",
     "section": "",
-    "text": "Inspect Swarm runs a swarm of agents on one sample of an Inspect task. A swarm is an Inspect agent, so it replaces the task’s solver, and the task’s scorer scores the swarm’s answer.\n\n\n\n\n\n\nWarning\n\n\n\nInspect Swarm is experimental and under active development. It has no stable API and no releases yet, and it may change or be withdrawn without notice.",
+    "text": "Inspect Swarm runs a swarm of agents on one sample of an Inspect task. A swarm is an Inspect agent, so it replaces the task’s solver, and the task’s scorer scores the swarm’s answer.\n\n\n\n\n\n\nWarning\n\n\n\nEverything in Inspect Swarm is experimental and may change in any release without notice, including swarm(), member(), Budget, the built-in controller and channel names, and the record and evidence formats. No support is guaranteed.",
     "crumbs": [
       "Reference",
       "Basics",
@@ -650,7 +650,7 @@
     "href": "index.html#getting-started",
     "title": "Inspect Swarm",
     "section": "Getting Started",
-    "text": "Getting Started\nInspect Swarm has no releases yet. Install it from GitHub:\npip install git+https://github.com/meridianlabs-ai/inspect_swarm\nor, in a uv project:\nuv add \"inspect_swarm @ git+https://github.com/meridianlabs-ai/inspect_swarm\"\nIt needs inspect_ai 0.3.283 or later and Python 3.11 or later.",
+    "text": "Getting Started\nInstall it from PyPI:\npip install inspect_swarm\nor, in a uv project:\nuv add inspect_swarm\nTo install the latest development version from GitHub:\npip install git+https://github.com/meridianlabs-ai/inspect_swarm\nor, in a uv project:\nuv add \"inspect_swarm @ git+https://github.com/meridianlabs-ai/inspect_swarm\"\nIt needs inspect_ai 0.3.283 or later and Python 3.11 or later.",
     "crumbs": [
       "Reference",
       "Basics",
@@ -699,6 +699,18 @@
     "title": "Inspect Swarm",
     "section": "Learning more",
     "text": "Learning more\n\nMembers: member records, names, limits, member builders, and how a member ends.\nControllers: when the swarm stops, and writing a controller of your own.\nChannels and Shared Memory: how members share information, and waiting for each other.\nBudgets and Sandboxes: the swarm’s caps and splits, and shared or per-member sandboxes.\nScoring, Analysis and Restrictions: the answer and the result record, metrics, the ledger, and what the swarm does not support or record.\n\nThe examples are runnable tasks for each of these. The designs behind the swarm are in design/.",
+    "crumbs": [
+      "Reference",
+      "Basics",
+      "Getting Started"
+    ]
+  },
+  {
+    "objectID": "index.html#for-agents",
+    "href": "index.html#for-agents",
+    "title": "Inspect Swarm",
+    "section": "For agents",
+    "text": "For agents\nThe documentation is also published as Markdown for agents:\n\nhttps://meridianlabs-ai.github.io/inspect_swarm/llms.txt: an index of the pages, with a line on what each covers.\nhttps://meridianlabs-ai.github.io/inspect_swarm/llms-guide.txt: the user guide as one Markdown file.\nhttps://meridianlabs-ai.github.io/inspect_swarm/llms-full.txt: the user guide and the API reference as one Markdown file.",
     "crumbs": [
       "Reference",
       "Basics",

@@ -5,25 +5,25 @@
 
 ## Basics
 
-- [Getting Started](https://meridianlabs-ai.github.io/inspect_swarm/index.html.md)
-- [Members](https://meridianlabs-ai.github.io/inspect_swarm/members.html.md)
-- [Controllers](https://meridianlabs-ai.github.io/inspect_swarm/controllers.html.md)
+- [Getting Started](https://meridianlabs-ai.github.io/inspect_swarm/index.html.md): Install Inspect Swarm, run a swarm as the solver of an existing task or in a task of your own, and see what the log records; read this first.
+- [Members](https://meridianlabs-ai.github.io/inspect_swarm/members.html.md): Define the swarm's members with `member()`: factory or built agents, names, roles, counts, limits, member builders, tool state, background work, how a member ends, and the agents the swarm refuses; read it to set up who runs in a swarm.
+- [Controllers](https://meridianlabs-ai.github.io/inspect_swarm/controllers.html.md): The `leaderless` controller, when the swarm stops, which submission is its answer, and how to write a controller of your own; read it to change how members start and stop or how the answer is chosen.
 
 ## Communication
 
-- [Channels](https://meridianlabs-ai.github.io/inspect_swarm/channels.html.md)
-- [Shared Memory](https://meridianlabs-ai.github.io/inspect_swarm/shared-memory.html.md)
+- [Channels](https://meridianlabs-ai.github.io/inspect_swarm/channels.html.md): How members share information: the default `filesystem` channel, what the log records of files members share, and how to write a channel; read it to choose how members communicate.
+- [Shared Memory](https://meridianlabs-ai.github.io/inspect_swarm/shared-memory.html.md): The `shared_memory` channel: wiring its tools into members, the tool's commands, notices, `swarm_wait`, subagents, limits, the record of the board, monitoring with Inspect Sentinel, and migrating from `memory(instance=...)`; read it when members need a shared board of files that the log records.
 
 ## Resources
 
-- [Budgets](https://meridianlabs-ai.github.io/inspect_swarm/budget.html.md)
-- [Sandboxes](https://meridianlabs-ai.github.io/inspect_swarm/sandboxes.html.md)
+- [Budgets](https://meridianlabs-ai.github.io/inspect_swarm/budget.html.md): The swarm's cost, token and time caps with `Budget`: defaults from the sample's limits, cost data, pooled or split caps, what members see of the budget, and sweeps; read it to cap or divide what a swarm spends.
+- [Sandboxes](https://meridianlabs-ai.github.io/inspect_swarm/sandboxes.html.md): Shared or per-member sandboxes: members in the sample's sandbox, a sandbox for each member with shared services or a shared volume, sizing, and scoring; read it when members run code or edit files.
 
 ## Results
 
-- [Scoring](https://meridianlabs-ai.github.io/inspect_swarm/scoring.html.md)
-- [Analysis](https://meridianlabs-ai.github.io/inspect_swarm/analysis.html.md)
-- [Restrictions](https://meridianlabs-ai.github.io/inspect_swarm/restrictions.html.md)
+- [Scoring](https://meridianlabs-ai.github.io/inspect_swarm/scoring.html.md): How the task's scorers score a swarm: which submission is the answer, the `inspect_swarm:result` record, scoring what members leave in sandboxes, checks during the run, and comparing a swarm with a single agent; read it to set up scoring or read the answer.
+- [Analysis](https://meridianlabs-ai.github.io/inspect_swarm/analysis.html.md): The `inspect_swarm:metrics` and `inspect_swarm:ledger` store entries and the swarm columns for Inspect's `samples_df()`; read it to analyse a swarm's usage, cost, communication and waits after a run.
+- [Restrictions](https://meridianlabs-ai.github.io/inspect_swarm/restrictions.html.md): What the swarm does not support, the limits of bridged members, what the log does not record, and the store keys task code must not write; read it to check whether a setup is supported and what the log holds as evidence.
 
 ## Reference
 

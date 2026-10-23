@@ -10,7 +10,7 @@ A swarm member: a built agent, or a registered `@agent` factory and its argument
 
 Create one with [member()](../reference/inspect_swarm.html.md#member), which documents the fields and the member contract.
 
-[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_member.py#L87)
+[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_member.py#L87)
 
 ``` python
 class Member(BaseModel)
@@ -59,7 +59,7 @@ By default the swarm derives its caps from the sample’s cost, token and time l
 
 Every field is a plain value, so each can be a task parameter, and two budgets that differ in any field are logged as different arguments.
 
-[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/0bf92564861eac1201cdb4fce251348d8861a7ed/src/inspect_swarm/_budget.py#L32)
+[Source](https://github.com/meridianlabs-ai/inspect_swarm/blob/3cd681e3033bd04f3ee457036c33169ad76fe786/src/inspect_swarm/_budget.py#L32)
 
 ``` python
 class Budget(BaseModel)
