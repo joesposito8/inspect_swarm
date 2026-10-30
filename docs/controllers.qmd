@@ -52,6 +52,7 @@ from contextlib import aclosing
 
 from inspect_swarm import (
     Controller,
+    MemberEnded,
     MemberInfo,
     StopReason,
     SwarmControl,
@@ -71,14 +72,14 @@ def escalate(first: str = "fast") -> Controller:
         swarm.start(first)
         async with aclosing(swarm.events()) as events:
             async for event in events:
-                if event.submitted:
+                if isinstance(event, MemberEnded) and event.submitted:
                     return "submitted"
         for m in swarm.members:
             if m.state == "pending":
                 swarm.start(m)
         async with aclosing(swarm.events()) as events:
             async for event in events:
-                if event.submitted:
+                if isinstance(event, MemberEnded) and event.submitted:
                     return "submitted"
         return "all_done"
 
@@ -87,7 +88,7 @@ def escalate(first: str = "fast") -> Controller:
 
 - `swarm.members` are the members in roster order, as `MemberHandle`s: name, role, state (`pending`, `running` or `ended`), status and whether it submitted. A controller never sees what a member wrote.
 - `swarm.start(member, input=None)` starts a member and returns at once. `input` replaces the swarm's input for that member; `None` gives it the swarm's input. The member's preamble follows either. A member runs once, and starting one after the stop has begun raises.
-- `swarm.events()` yields each event once, in order from the swarm's start. Its only kind is `MemberEnded`, with the member's name, status and whether it submitted. The iterator ends when no member is running and no event is waiting, so a member started later needs a new `events()` call. Use one iterator at a time, and close it, as `aclosing()` does here.
+- `swarm.events()` yields each event once, in order from the swarm's start. `MemberEnded` has the member's name, status and whether it submitted. `MemberNotified` has the name of a member that called `swarm_notify()`, which a member's tools call to say it may have changed something the controller watches. Test an event's kind before reading its fields. The iterator ends when no member is running and no event is waiting, so a member started later needs a new `events()` call. Use one iterator at a time, and close it, as `aclosing()` does here.
 - `check`, if given, is called with the roster when `swarm()` is called. Raise `ValueError` for a roster the controller cannot run.
 - `final`, if given, is the rule that chooses the answer: `first` (the default, as here) or `last`.
 - The stop reasons `all_done`, `submitted`, `verified` and `quiescence` are recorded as they are. Any other is recorded as `controller:<reason>`.
@@ -103,7 +104,13 @@ This controller answers with the first submission from a member with a given rol
 ```python
 from contextlib import aclosing
 
-from inspect_swarm import Controller, StopReason, SwarmControl, swarm_controller
+from inspect_swarm import (
+    Controller,
+    MemberEnded,
+    StopReason,
+    SwarmControl,
+    swarm_controller,
+)
 
 
 @swarm_controller
@@ -118,6 +125,7 @@ def prefer(role: str) -> Controller:
             async for event in events:
                 if (
                     not chosen
+                    and isinstance(event, MemberEnded)
                     and event.submitted
                     and swarm.member(event.member).role == role
                 ):
@@ -135,7 +143,13 @@ Some tasks have a checker, such as a proof checker or a test suite, and the expe
 ```python
 from contextlib import aclosing
 
-from inspect_swarm import Controller, StopReason, SwarmControl, swarm_controller
+from inspect_swarm import (
+    Controller,
+    MemberEnded,
+    StopReason,
+    SwarmControl,
+    swarm_controller,
+)
 
 
 @swarm_controller
@@ -150,7 +164,7 @@ def until_proved() -> Controller:
             swarm.start(m)
         async with aclosing(swarm.events()) as events:
             async for event in events:
-                if event.submitted:
+                if isinstance(event, MemberEnded) and event.submitted:
                     return "proved"
         return "all_done"
 
@@ -202,3 +216,13 @@ def checked_solver(attempts: int = 5) -> Agent:
 - With background work, a controller sees a member's end only after the member's background work has drained ([Members](members.qmd#background-work)), so the other members stop up to one grace period later.
 
 [`examples/proof_swarm.py`](https://github.com/meridianlabs-ai/inspect_swarm/blob/main/examples/proof_swarm.py) uses the same controller with per-member sandboxes and a checking service in its own container. Its member builder checks the answer the member leaves when the agent returns, not only the checks the agent asked for, since a member could pass a check and then change its answer.
+
+## Stopping on the state of the world
+
+Some experiments stop on a quality of the environment rather than on what a member submits: a rollout halts when service health drops below a threshold. `events()` yields what members do, not what the world is, so such a controller needs to learn of the change some other way. The `stop_on_outage` examples stop a cluster upgrade the moment the cluster loses quorum, and differ in where the check runs:
+
+- `stop_on_outage_tools.py`, `stop_on_outage_turns.py` and `stop_on_outage_event.py` wake the controller, from a wrapper around the tool that can lose quorum, from `react(on_continue=...)`, or with `swarm_notify()`, and the controller checks the cluster when it wakes. A check made after the change misses a loss that is over by then: a server restarted while another is down drops below quorum for an instant, and the controller sees a healthy cluster.
+- `stop_on_outage_world.py` checks inside the change, in the tool that owns the cluster, and records a loss in the store; the controller waits for the record. `stop_on_outage_service.py` moves the cluster into a container that does the same on every change and appends it to a log, and the controller blocks on that log with `sandbox("cluster").exec(...)`. The world then stops the swarm for any member that reaches it, bridged CLI agents included (`stop_on_outage_bridged.py`), and the agents cannot see the check.
+- `stop_on_outage_sidecar.py` watches files the members edit from a container beside them, and shows what a watcher that reads after the change cannot tell: the state at the change, or who made it.
+
+Whichever way the controller learns of the change, it stops by returning, so the stop reaches the members after the change: a tool call or container command in flight finishes, and a bridged member is stopped at its next model call. A controller that waits on a record should read it once more when every member has ended, since the wait may start after a member's first change.

@@ -1,7 +1,7 @@
 from contextlib import aclosing
 
 from .._final import FinalName
-from ._control import SwarmControl
+from ._control import MemberEnded, SwarmControl
 from ._controller import Controller, StopReason, swarm_controller
 
 
@@ -35,7 +35,11 @@ def leaderless(
             swarm.start(m)
         async with aclosing(swarm.events()) as events:
             async for event in events:
-                if stop_on_submission and event.submitted:
+                if (
+                    stop_on_submission
+                    and isinstance(event, MemberEnded)
+                    and event.submitted
+                ):
                     return "submitted"
         return "all_done"
 

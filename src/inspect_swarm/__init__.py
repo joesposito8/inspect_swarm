@@ -20,9 +20,11 @@ from ._channel.shared_memory import shared_memory
 from ._controller._control import (
     MemberEnded,
     MemberHandle,
+    MemberNotified,
     MemberState,
     SwarmControl,
     SwarmEvent,
+    swarm_notify,
 )
 from ._controller._controller import (
     Controller,
@@ -54,6 +56,7 @@ __all__ = [
     "MemberEnded",
     "MemberHandle",
     "MemberInfo",
+    "MemberNotified",
     "MemberState",
     "Record",
     "StopReason",
@@ -72,6 +75,7 @@ __all__ = [
     "swarm_budget",
     "swarm_channel",
     "swarm_controller",
+    "swarm_notify",
     "swarm_resources",
     "swarm_tools",
 ]

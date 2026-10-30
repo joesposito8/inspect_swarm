@@ -21,6 +21,7 @@ from .._budget import (
     MemberContext,
     SwarmNode,
     current_budget,
+    current_member,
     is_bridged,
 )
 from .._evidence import MemberTimelines, evidence, write_ledger, write_metrics
@@ -97,8 +98,33 @@ class MemberEnded:
     """Whether it ended with a submission."""
 
 
-SwarmEvent = MemberEnded
+@dataclass(frozen=True)
+class MemberNotified:
+    """A member, or one of its tools, called `swarm_notify()`."""
+
+    member: str
+    """The member's name."""
+
+
+SwarmEvent = MemberEnded | MemberNotified
 """An event a controller receives from `SwarmControl.events()`. Later versions add kinds, so test an event's type before reading its fields."""
+
+
+def swarm_notify() -> None:
+    """Tell the controller that the calling member may have changed something it watches.
+
+    Queues a `MemberNotified` event on `SwarmControl.events()`, so a controller that stops on the state of the world, such as a store or a sandbox, can check that state each time a member acts. Call it from a member's tools after a change, or from its agent loop.
+
+    Raises:
+        RuntimeError: If called outside a swarm member or its tools.
+    """
+    run = _current_run.get()
+    member = current_member.get()
+    if run is None or member is None:
+        raise RuntimeError(
+            "swarm_notify() was called outside a swarm member; call it from a swarm member or its tools."
+        )
+    run.notify(member.name)
 
 
 class SwarmControl(Protocol):
@@ -396,6 +422,7 @@ class SwarmRun:
         self._settle()
         error: BaseException | None = None
         bus_token = current_bus.set(self.bus)
+        run_token = _current_run.set(self)
         # for swarm_budget(), in every member's context and the controller's
         budget_token = current_budget.set(
             BudgetState(
@@ -519,6 +546,7 @@ class SwarmRun:
             # and the ledger
             current_budget.reset(budget_token)
             current_bus.reset(bus_token)
+            _current_run.reset(run_token)
         if error is not None:
             raise error
 
@@ -617,6 +645,10 @@ class SwarmRun:
         self._queue.append(MemberEnded(m.name, status, m.submitted))
         self._notify()
 
+    def notify(self, member: str) -> None:
+        self._queue.append(MemberNotified(member))
+        self._notify()
+
     # the record and the provisional answer, after each change
     def _settle(self) -> None:
         settle(
@@ -689,6 +721,12 @@ class SwarmRun:
     def _notify(self) -> None:
         self._changed.set()
         self._changed = anyio.Event()
+
+
+# for swarm_notify(), in every member's context
+_current_run: contextvars.ContextVar[SwarmRun | None] = contextvars.ContextVar(
+    "inspect_swarm_current_run", default=None
+)
 
 
 # How a sample limit or the operator ended the swarm, from direct evidence only: the

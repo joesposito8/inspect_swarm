@@ -1,0 +1,32 @@
+# The cluster as files on a volume that one container per ops agent shares with a
+# watcher (stop_on_outage_sidecar.py). The agents can see the volume but not the
+# watcher, and nothing has network access.
+services:
+  watcher:
+    image: python:3.12-slim
+    command: ["python3", "/opt/cluster_watcher.py"]
+    volumes:
+      - ./cluster_watcher.py:/opt/cluster_watcher.py:ro
+      - cluster-files:/cluster
+    network_mode: none
+    x-default: true
+  ops-1:
+    image: python:3.12-slim
+    command: tail -f /dev/null
+    volumes:
+      - cluster-files:/cluster
+    network_mode: none
+  ops-2:
+    image: python:3.12-slim
+    command: tail -f /dev/null
+    volumes:
+      - cluster-files:/cluster
+    network_mode: none
+  ops-3:
+    image: python:3.12-slim
+    command: tail -f /dev/null
+    volumes:
+      - cluster-files:/cluster
+    network_mode: none
+volumes:
+  cluster-files:

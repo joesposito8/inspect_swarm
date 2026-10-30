@@ -16,7 +16,9 @@ description: Swarms, members, controllers, channels and the budget view.
 ### SwarmControl
 ### MemberHandle
 ### MemberEnded
+### MemberNotified
 ### SwarmEvent
+### swarm_notify
 ### MemberInfo
 ### MemberState
 ### StopReason

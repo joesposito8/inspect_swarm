@@ -39,7 +39,15 @@ from inspect_ai.util import (
     token_limit,
 )
 
-from inspect_swarm import Budget, SwarmControl, leaderless, member, shared_memory, swarm
+from inspect_swarm import (
+    Budget,
+    MemberEnded,
+    SwarmControl,
+    leaderless,
+    member,
+    shared_memory,
+    swarm,
+)
 from inspect_swarm._controller._control import SwarmRun
 from inspect_swarm._evidence import LEDGER_KEY
 from inspect_swarm._ledger import SwarmLedger
@@ -185,7 +193,11 @@ async def test_a_controller_sees_a_member_end_after_its_drain() -> None:
         control.start("prover")
         control.start("other")
         async for event in control.events():
-            if event.member == "prover" and event.submitted:
+            if (
+                isinstance(event, MemberEnded)
+                and event.member == "prover"
+                and event.submitted
+            ):
                 seen.append(list(log))
                 break
         return "verified"

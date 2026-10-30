@@ -20,12 +20,15 @@ from inspect_swarm import (
     Controller,
     MemberEnded,
     MemberHandle,
+    MemberNotified,
     StopReason,
     SwarmControl,
+    SwarmEvent,
     leaderless,
     member,
     swarm,
     swarm_controller,
+    swarm_notify,
 )
 from inspect_swarm._controller._control import SwarmRun
 from inspect_swarm._record import RECORD_KEY
@@ -212,7 +215,7 @@ async def test_a_woken_iterator_keeps_the_event_that_woke_it() -> None:
         )
         [m] = run._members
         m.state = "running"
-        received: list[MemberEnded] = []
+        received: list[SwarmEvent] = []
 
         async def first() -> None:
             async for event in run.events():
@@ -263,6 +266,45 @@ async def test_an_open_iterator_holds_the_events_until_it_ends_or_is_closed() ->
     assert len(refused) == 1 and "still open" in refused[0]
     assert sorted(received) == ["generator-1", "generator-2", "generator-3"]
     assert set(statuses(stop).values()) == {"submitted"}
+
+
+@agent(name="notifier_test")
+def notifier() -> Agent:
+    async def execute(state: AgentState) -> AgentState:
+        swarm_notify()
+        return state
+
+    return execute
+
+
+@pytest.mark.anyio
+async def test_swarm_notify_queues_an_event_for_the_calling_member() -> None:
+    received: list[SwarmEvent] = []
+
+    async def run(control: SwarmControl) -> StopReason:
+        for m in control.members:
+            control.start(m)
+        async for event in control.events():
+            received.append(event)
+        return "all_done"
+
+    stop = await run_swarm(
+        swarm(
+            member(notifier(), name="notifier"),
+            controller=_controller(run, "controller_test_notify"),
+            channels=[],
+        )
+    )
+    assert received == [
+        MemberNotified("notifier"),
+        MemberEnded("notifier", "submitted", True),
+    ]
+    assert statuses(stop) == {"notifier": "submitted"}
+
+
+def test_swarm_notify_outside_a_swarm_raises() -> None:
+    with pytest.raises(RuntimeError, match="outside a swarm member"):
+        swarm_notify()
 
 
 @pytest.mark.anyio
