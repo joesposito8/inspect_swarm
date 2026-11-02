@@ -37,6 +37,7 @@ from inspect_ai.util._sandbox.identity import (
 )
 
 from inspect_swarm import (
+    WORLD_LOG,
     Boundary,
     Budget,
     MemberReap,
@@ -123,6 +124,10 @@ class IsolationStub(SandboxEnvironment):
     ) -> ExecResult[str]:
         # privileged_shell(): [sh, -c, script, sh, *args]
         assert cmd[0] == SHELL_PATH
+        if "the world log" in cmd[2]:
+            # the world log's setup, which every swarm with usable root runs before
+            # its members start: not one of users isolation's commands, so not recorded
+            return ExecResult(True, 0, "0 700\n0 600\n", "")
         self.calls.append((user, cmd[2], cmd[4:]))
         self.concurrency.append((cmd[2], concurrency))
         if self.stall_on is not None and self.stall_on in cmd[2]:
@@ -200,6 +205,9 @@ class IsolationStub(SandboxEnvironment):
     async def read_file(
         self, file: str, text: bool = True, *, user: str | None = None
     ) -> str | bytes:
+        if file == WORLD_LOG:
+            # the world log the swarm polls; nothing in these swarms writes it
+            return ""
         raise NotImplementedError
 
     @classmethod
@@ -389,7 +397,8 @@ async def test_members_of_a_swarm_without_isolation_run_as_the_default_user() ->
     with environments(default=stub):
         outcome = await run_swarm(swarm(_scoped(seen), channels=[]))
     assert {s["user"] for s in seen.values()} == {None}
-    assert stub.calls == []
+    # only the world log's root-access check ran in the sandbox
+    assert [c for c in stub.calls if "/proc/self/status" not in c[1]] == []
     # the record and metrics hold no isolation evidence
     assert outcome.record.isolation_incomplete is None
     for result in outcome.record.members:
@@ -929,8 +938,9 @@ async def test_users_isolation_is_refused_inside_an_identity_scope(
                 await run_swarm(team)
         else:
             await run_swarm(team)
-    # refused before setup runs anything
-    assert stub.calls == []
+    # refused before setup runs anything; a swarm without isolation runs only the world
+    # log's root-access check in the sandbox
+    assert [c for c in stub.calls if "/proc/self/status" not in c[1]] == []
     if not isolated:
         # a swarm without isolation keeps the scope it runs in
         assert {(s["user"], s["cwd"]) for s in seen.values()} == {("outer", "/outer")}

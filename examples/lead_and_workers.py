@@ -86,12 +86,13 @@ def lead_and_workers(lead: str = "lead") -> Controller:
                         swarm.choose_answer(lead, reason="the lead's answer")
                         return "submitted"
                     return "lead_ended"
-                woken = (isinstance(event, MemberNews) and event.sender == lead) or (
-                    isinstance(event, MemberIdle) and event.news
-                )
-                # an earlier event may have woken the member already
-                if woken and swarm.member(event.member).state == "idle":
-                    swarm.wake(event.member, WAKE)
+                if isinstance(event, MemberNews | MemberIdle):
+                    woken = (
+                        isinstance(event, MemberNews) and event.sender == lead
+                    ) or (isinstance(event, MemberIdle) and event.news)
+                    # an earlier event may have woken the member already
+                    if woken and swarm.member(event.member).state == "idle":
+                        swarm.wake(event.member, WAKE)
         return "all_done"
 
     return Controller(run)

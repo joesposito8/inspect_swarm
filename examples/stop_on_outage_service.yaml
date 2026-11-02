@@ -1,0 +1,38 @@
+# The cluster as a service in its own container, and one container per ops agent that
+# can reach it only over an internal network (stop_on_outage_service.py and
+# stop_on_outage_bridged.py). The service checks quorum on every change; the agents
+# only have the client command.
+services:
+  cluster:
+    image: python:3.12-slim
+    command: ["python3", "/opt/cluster_service.py"]
+    environment:
+      UPGRADE_SECONDS: "2"
+    volumes:
+      - ./cluster_service.py:/opt/cluster_service.py:ro
+    networks: [cluster]
+    x-default: true
+  ops-1:
+    image: python:3.12-slim
+    command: tail -f /dev/null
+    volumes:
+      - ./cluster_client.py:/opt/cluster:ro
+      - ./cluster_agent.py:/opt/agent.py:ro
+    networks: [cluster]
+  ops-2:
+    image: python:3.12-slim
+    command: tail -f /dev/null
+    volumes:
+      - ./cluster_client.py:/opt/cluster:ro
+      - ./cluster_agent.py:/opt/agent.py:ro
+    networks: [cluster]
+  ops-3:
+    image: python:3.12-slim
+    command: tail -f /dev/null
+    volumes:
+      - ./cluster_client.py:/opt/cluster:ro
+      - ./cluster_agent.py:/opt/agent.py:ro
+    networks: [cluster]
+networks:
+  cluster:
+    internal: true

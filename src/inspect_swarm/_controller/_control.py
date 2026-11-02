@@ -1,12 +1,13 @@
 import asyncio
 import contextvars
 import functools
+import json
 import math
 from collections import deque
 from collections.abc import AsyncGenerator, Awaitable, Callable, Mapping, Sequence
 from contextlib import ExitStack
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Literal, Protocol, cast
+from typing import TYPE_CHECKING, Any, Literal, Protocol, cast
 
 import anyio
 import anyio.lowlevel
@@ -19,9 +20,12 @@ from inspect_ai.agent import Agent, AgentState
 from inspect_ai.log._samples import sample_active
 from inspect_ai.model import ChatMessage, ChatMessageUser, ModelOutput
 from inspect_ai.solver._task_state import sample_state
-from inspect_ai.util import Limit, current_span_id, sample_limits
+from inspect_ai.util import Limit, current_span_id, sample_limits, sandbox
 from inspect_ai.util._checkpoint.checkpointer_noop import (
     _NoopCheckpointer,  # pyright: ignore[reportPrivateUsage]
+)
+from inspect_ai.util._sandbox.context import (
+    sandbox_environments_context_var,  # pyright: ignore[reportPrivateUsage]
 )
 from inspect_ai.util._store import suspend_store_events
 from pydantic import JsonValue
@@ -97,6 +101,13 @@ from .._record import (
 )
 from .._result import ResultSpec, Verdict, Verifier, key_answer, verifier_label
 from .._seam import BoundaryCallback, MemberGate, check_origin
+from .._world import (
+    WORLD_LOG,
+    WORLD_LOG_INTERVAL,
+    _on_record,  # pyright: ignore[reportPrivateUsage]
+    setup_world_log,
+    swarm_records,
+)
 
 if TYPE_CHECKING:
     from .._bus._bus import SwarmBus
@@ -261,7 +272,18 @@ class MemberNews:
     """The name of the member that sent the record."""
 
 
-ControlEvent = MemberEnded | MemberIdle | MemberNews
+@dataclass(frozen=True)
+class WorldChanged:
+    """The world log gained a record: something outside the members changed the world and wrote it down, with `swarm_record()` or a line in `WORLD_LOG`."""
+
+    source: str
+    """`host` for `swarm_record()`, `sandbox` for a line of `WORLD_LOG`."""
+
+    record: Any
+    """The record, as it was written."""
+
+
+ControlEvent = MemberEnded | MemberIdle | MemberNews | WorldChanged
 """An event a controller receives from `SwarmControl.events()`. Later versions add kinds, so test an event's type before reading its fields."""
 
 
@@ -677,6 +699,10 @@ class SwarmRun:
                 if isinstance(node, SwarmNode):
                     node.charge_sample = True
         self._controller_scope = anyio.CancelScope()
+        # how much of the world log has been queued: the host's records and the file's
+        self._host_seen = 0
+        self._log_seen = 0
+        self._log_scope: anyio.CancelScope | None = None
         self._members_tg: TaskGroup | None = None
         self._runtime_tg: TaskGroup | None = None
         # set when the supervisor returns or is cancelled
@@ -861,14 +887,22 @@ class SwarmRun:
         ended = False
         bus_token: "contextvars.Token[SwarmBus | None] | None" = None
         budget_token: contextvars.Token[BudgetState | None] | None = None
+        record_token: contextvars.Token[Callable[[], None] | None] | None = None
         running: int | None = None
+        environments = sandbox_environments_context_var.get(None)
         try:
             # in the swarm's span, before any member can start
             write_start()
             started = True
             if self._isolation is not None:
                 isolation_event("isolation", _isolation_data(self._isolation))
+            # the world log's file side, where there is a sandbox to hold it: created
+            # root-only before any member acts, as users isolation's start-of-swarm
+            # setup creates the members' users and shares
+            sandboxed = bool(environments) and await setup_world_log(environments or {})
             bus_token = current_bus.set(self.bus)
+            # for swarm_record(), in every member's context and the controller's
+            record_token = _on_record.set(self._host_changed)
             # for swarm_budget(), in every member's context and the controller's
             budget_token = current_budget.set(
                 BudgetState(
@@ -909,6 +943,11 @@ class SwarmRun:
                                         runtime_tg.start_soon(
                                             self._time_cap, self._time
                                         )
+                                    if sandboxed:
+                                        runtime_tg.start_soon(self._watch_log)
+                                    # records written before the swarm started come
+                                    # first
+                                    self._host_changed()
                                     # the controller and the verifier inherit the
                                     # runtime lever, which is entered once
                                     with ExitStack() as lever:
@@ -926,6 +965,11 @@ class SwarmRun:
                                 # the runtime has ended: members still unwinding are
                                 # being cancelled, and nothing more can be scheduled
                                 self._runtime_tg = None
+                        # what the world log gained since its last read, for the
+                        # transcript: the controller has returned, so no event is read
+                        self._host_changed()
+                        if sandboxed:
+                            await self._read_log()
                 except (Exception, BaseExceptionGroup) as ex:
                     # a foreign error from a member or the controller, or on trio a
                     # cancellation grouped with errors, which the wrappers do not
@@ -1050,6 +1094,8 @@ class SwarmRun:
                 interval.close()
                 if budget_token is not None:
                     current_budget.reset(budget_token)
+                if record_token is not None:
+                    _on_record.reset(record_token)
                 if bus_token is not None:
                     current_bus.reset(bus_token)
                 if running is not None:
@@ -1185,6 +1231,8 @@ class SwarmRun:
         self.stop_reason = reason
         # a no-op when the controller has returned
         self._controller_scope.cancel()
+        if self._log_scope is not None:
+            self._log_scope.cancel()
         for m in self._members:
             if m.state in ("running", "idle"):
                 m.lever.close(reason)
@@ -1682,6 +1730,40 @@ class SwarmRun:
     # the model calls in flight now, for the turn gate's cancelled chains
     def _in_flight(self) -> list[str]:
         return [] if self._interval is None else self._interval.pending_calls()
+
+    # the world log
+
+    def _host_changed(self) -> None:
+        # swarm_record() was called, in this sample: queue what it added
+        records = swarm_records()
+        new, self._host_seen = records[self._host_seen :], len(records)
+        self._world_changed("host", new)
+
+    async def _watch_log(self) -> None:
+        # until the stop cancels it
+        with anyio.CancelScope() as scope:
+            self._log_scope = scope
+            while True:
+                await self._read_log()
+                await anyio.sleep(WORLD_LOG_INTERVAL)
+
+    async def _read_log(self) -> None:
+        # queue what WORLD_LOG gained since the last read; a file that only grows is
+        # read whole each time, so a line is late by at most the interval, never missed
+        try:
+            text = await sandbox().read_file(WORLD_LOG)
+        except FileNotFoundError:
+            return
+        lines = [line for line in text.splitlines() if line.strip()]
+        new, self._log_seen = lines[self._log_seen :], len(lines)
+        self._world_changed("sandbox", [json.loads(line) for line in new])
+
+    def _world_changed(self, source: str, records: Sequence[Any]) -> None:
+        for record in records:
+            swarm_event("world_changed", member=None, source=source, record=record)
+            self._queue.append(WorldChanged(source, record))
+        if records:
+            self._notify()
 
     async def _time_cap(self, seconds: float) -> None:
         await anyio.sleep(seconds)

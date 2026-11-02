@@ -1,6 +1,6 @@
 ---
 reference: inspect_swarm
-description: Swarms, members, controllers, channels, results and the budget view.
+description: Swarms, members, controllers, channels, the world log, results and the budget view.
 ---
 
 ## Swarms and members
@@ -23,6 +23,7 @@ description: Swarms, members, controllers, channels, results and the budget view
 ### VerdictSummary
 ### MemberIdle
 ### MemberNews
+### WorldChanged
 ### ControlEvent
 ### MemberInfo
 ### MemberState
@@ -55,6 +56,12 @@ description: Swarms, members, controllers, channels, results and the budget view
 ### Draft
 ### Delivery
 ### Record
+
+## The world log
+
+### swarm_record
+### swarm_records
+### WORLD_LOG
 
 ## Results
 

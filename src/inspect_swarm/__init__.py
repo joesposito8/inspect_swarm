@@ -31,6 +31,7 @@ from ._controller._control import (
     MemberState,
     SwarmControl,
     VerdictSummary,
+    WorldChanged,
 )
 from ._controller._controller import (
     Controller,
@@ -62,6 +63,7 @@ from ._result import (
 from ._seam import Boundary, BoundaryCallback
 from ._swarm import baseline, swarm
 from ._tools import swarm_resources
+from ._world import WORLD_LOG, swarm_record, swarm_records
 
 try:
     from ._version import __version__
@@ -114,7 +116,10 @@ __all__ = [
     "Verifier",
     "WaitNews",
     "WaitSpec",
+    "WORLD_LOG",
     "WaitingState",
+    "WorldChanged",
+    "WorldChanged",
     "__version__",
     "answer_result",
     "artifact_result",
@@ -130,6 +135,8 @@ __all__ = [
     "swarm_budget",
     "swarm_channel",
     "swarm_controller",
+    "swarm_record",
+    "swarm_records",
     "swarm_resources",
     "swarm_result",
     "swarm_tools",

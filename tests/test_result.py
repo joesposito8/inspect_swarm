@@ -442,7 +442,7 @@ async def test_the_final_step_verifies_a_submission_whose_check_the_stop_refused
         for m in control.members:
             control.start(m)
         async for event in control.events():
-            if event.member == "early":
+            if isinstance(event, MemberEnded) and event.member == "early":
                 break
         # nothing awaits between here and the stop, so the late member submits during
         # grace, after the runtime lever has closed
@@ -683,7 +683,7 @@ async def test_the_record_keeps_each_members_output_however_it_ended() -> None:
         for m in control.members:
             control.start(m)
         async for event in control.events():
-            if event.member == "limited":
+            if isinstance(event, MemberEnded) and event.member == "limited":
                 break
         while waiting.calls < 1:
             await anyio.sleep(0)
