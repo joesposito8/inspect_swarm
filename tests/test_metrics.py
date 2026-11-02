@@ -56,6 +56,7 @@ from inspect_swarm import (
     ChannelRun,
     ChannelState,
     Controller,
+    MemberEnded,
     Record,
     SwarmControl,
     WaitNews,
@@ -438,6 +439,7 @@ async def test_an_interrupted_swarm_counts_its_provisional_answer(ending: str) -
         control.start("a")
         control.start("b")
         async for event in control.events():
+            assert isinstance(event, MemberEnded)
             if event.member == "a":
                 break
         if ending == "error":
@@ -483,6 +485,7 @@ async def test_steps_to_answer_follow_an_answer_other_than_the_first(
             control.start(m)
         ended: set[str] = set()
         async for event in control.events():
+            assert isinstance(event, MemberEnded)
             ended.add(event.member)
             if ended >= {"a", "b"}:
                 break

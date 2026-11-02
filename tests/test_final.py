@@ -27,6 +27,7 @@ from inspect_ai.util import (
 from inspect_swarm import (
     Budget,
     Controller,
+    MemberEnded,
     StopReason,
     SwarmControl,
     leaderless,
@@ -278,6 +279,7 @@ async def test_the_provisional_answer_is_set_at_the_first_submission() -> None:
         control.start("quick")
         control.start("slow")
         async for event in control.events():
+            assert isinstance(event, MemberEnded)
             if event.member == "quick":
                 states = [m.state for m in control.members]
                 seen.append((state.output.completion, states))
@@ -404,6 +406,7 @@ async def test_a_submission_during_grace_is_chosen_only_without_an_earlier_one(
             control.start(m)
         if earlier:
             async for event in control.events():
+                assert isinstance(event, MemberEnded)
                 if event.member == "early":
                     break
         # released as the stop begins, so the late member answers in grace
@@ -593,6 +596,7 @@ async def test_evidence_names_members_and_spans_and_holds_no_member_text() -> No
             control.start(m)
         ended: set[str] = set()
         async for event in control.events():
+            assert isinstance(event, MemberEnded)
             ended.add(event.member)
             if ended == {"a", "limited"}:
                 break
@@ -897,6 +901,7 @@ async def test_a_controllers_choice_is_the_provisional_answer_at_once() -> None:
         for m in control.members:
             control.start(m)
         async for event in control.events():
+            assert isinstance(event, MemberEnded)
             if event.member == "b":
                 # `last` would answer with b
                 control.choose_answer("a", reason="earlier")

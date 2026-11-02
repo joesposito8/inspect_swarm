@@ -24,6 +24,7 @@ from ._controller._control import (
     MemberState,
     SwarmControl,
     SwarmEvent,
+    WorldChanged,
 )
 from ._controller._controller import (
     Controller,
@@ -37,6 +38,7 @@ from ._member import Member, member
 from ._record import FinalRecord, MemberResult, SwarmResultRecord, swarm_result
 from ._swarm import swarm
 from ._tools import swarm_resources
+from ._world import WORLD_LOG, swarm_record, swarm_records
 
 try:
     from ._version import __version__
@@ -67,7 +69,9 @@ __all__ = [
     "SwarmResultRecord",
     "WaitNews",
     "WaitSpec",
+    "WORLD_LOG",
     "WaitingState",
+    "WorldChanged",
     "__version__",
     "filesystem",
     "leaderless",
@@ -78,6 +82,8 @@ __all__ = [
     "swarm_budget",
     "swarm_channel",
     "swarm_controller",
+    "swarm_record",
+    "swarm_records",
     "swarm_resources",
     "swarm_result",
     "swarm_tools",

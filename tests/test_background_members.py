@@ -41,6 +41,7 @@ from inspect_ai.util import (
 
 from inspect_swarm import (
     Budget,
+    MemberEnded,
     SwarmControl,
     leaderless,
     member,
@@ -193,6 +194,7 @@ async def test_a_controller_sees_a_member_end_after_its_drain() -> None:
         control.start("prover")
         control.start("other")
         async for event in control.events():
+            assert isinstance(event, MemberEnded)
             if event.member == "prover" and event.submitted:
                 seen.append(list(log))
                 break

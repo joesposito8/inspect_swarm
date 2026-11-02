@@ -52,6 +52,7 @@ from contextlib import aclosing
 
 from inspect_swarm import (
     Controller,
+    MemberEnded,
     MemberInfo,
     StopReason,
     SwarmControl,
@@ -71,14 +72,14 @@ def escalate(first: str = "fast") -> Controller:
         swarm.start(first)
         async with aclosing(swarm.events()) as events:
             async for event in events:
-                if event.submitted:
+                if isinstance(event, MemberEnded) and event.submitted:
                     return "submitted"
         for m in swarm.members:
             if m.state == "pending":
                 swarm.start(m)
         async with aclosing(swarm.events()) as events:
             async for event in events:
-                if event.submitted:
+                if isinstance(event, MemberEnded) and event.submitted:
                     return "submitted"
         return "all_done"
 
@@ -87,7 +88,7 @@ def escalate(first: str = "fast") -> Controller:
 
 - `swarm.members` are the members in roster order, as `MemberHandle`s: name, role, state (`pending`, `running` or `ended`), status and whether it submitted. A controller never sees what a member wrote.
 - `swarm.start(member, input=None)` starts a member and returns at once. `input` replaces the swarm's input for that member; `None` gives it the swarm's input. The member's preamble follows either. A member runs once, and starting one after the stop has begun raises.
-- `swarm.events()` yields each event once, in order from the swarm's start. Its only kind is `MemberEnded`, with the member's name, status and whether it submitted. The iterator ends when no member is running and no event is waiting, so a member started later needs a new `events()` call. Use one iterator at a time, and close it, as `aclosing()` does here.
+- `swarm.events()` yields each event once, in order from the swarm's start. `MemberEnded` has the member's name, status and whether it submitted. `WorldChanged` has a record the swarm watches gained an item ([Stopping on the state of the world](#stopping-on-the-state-of-the-world)). Test an event's kind before reading its fields. The iterator ends when no member is running and no event is waiting, so a member started later needs a new `events()` call. Use one iterator at a time, and close it, as `aclosing()` does here.
 - `check`, if given, is called with the roster when `swarm()` is called. Raise `ValueError` for a roster the controller cannot run.
 - `final`, if given, is the rule that chooses the answer: `first` (the default, as here) or `last`.
 - The stop reasons `all_done`, `submitted`, `verified` and `quiescence` are recorded as they are. Any other is recorded as `controller:<reason>`.
@@ -103,7 +104,13 @@ This controller answers with the first submission from a member with a given rol
 ```python
 from contextlib import aclosing
 
-from inspect_swarm import Controller, StopReason, SwarmControl, swarm_controller
+from inspect_swarm import (
+    Controller,
+    MemberEnded,
+    StopReason,
+    SwarmControl,
+    swarm_controller,
+)
 
 
 @swarm_controller
@@ -118,6 +125,7 @@ def prefer(role: str) -> Controller:
             async for event in events:
                 if (
                     not chosen
+                    and isinstance(event, MemberEnded)
                     and event.submitted
                     and swarm.member(event.member).role == role
                 ):
@@ -135,7 +143,13 @@ Some tasks have a checker, such as a proof checker or a test suite, and the expe
 ```python
 from contextlib import aclosing
 
-from inspect_swarm import Controller, StopReason, SwarmControl, swarm_controller
+from inspect_swarm import (
+    Controller,
+    MemberEnded,
+    StopReason,
+    SwarmControl,
+    swarm_controller,
+)
 
 
 @swarm_controller
@@ -150,7 +164,7 @@ def until_proved() -> Controller:
             swarm.start(m)
         async with aclosing(swarm.events()) as events:
             async for event in events:
-                if event.submitted:
+                if isinstance(event, MemberEnded) and event.submitted:
                     return "proved"
         return "all_done"
 
@@ -202,3 +216,68 @@ def checked_solver(attempts: int = 5) -> Agent:
 - With background work, a controller sees a member's end only after the member's background work has drained ([Members](members.qmd#background-work)), so the other members stop up to one grace period later.
 
 [`examples/proof_swarm.py`](https://github.com/meridianlabs-ai/inspect_swarm/blob/main/examples/proof_swarm.py) uses the same controller with per-member sandboxes and a checking service in its own container. Its member builder checks the answer the member leaves when the agent returns, not only the checks the agent asked for, since a member could pass a check and then change its answer.
+
+## Stopping on the state of the world
+
+Some experiments stop on a condition of the environment rather than on what a member submits: a rollout halts when service health drops below a threshold. `events()` yields what members do, so such a controller needs the world's changes to reach it too. The swarm keeps one record for that, the world log, in three parts that stay separate:
+
+1. **The world records.** Whatever owns the state checks the condition as it makes each change, and writes what it did to the world log. The check runs in the write, under the same lock, so a condition that is true for an instant and gone by the time anyone looks is still recorded. Host code, a tool as it makes its change, a setup solver, a hook, calls `swarm_record(**fields)`. Code in a sandbox appends one JSON object per line to `WORLD_LOG`, `/swarm/world.jsonl` in the sample's default sandbox.
+2. **The swarm delivers.** Each record becomes a `WorldChanged` event on `events()`, with `source` `host` or `sandbox` and the record as written: at once for `swarm_record()`, and within a second for the file, which the swarm reads whole on an interval whenever the sample has a sandbox. A log that only grows cannot be missed by reading it late, so the interval is latency, not coverage. Records written before the swarm starts are delivered first, and the log is read once more when the swarm ends, so the transcript holds all of it.
+3. **The controller stops.** It reads the events it is handed, and never the world.
+
+Nothing is declared on `swarm()`: the log is always there, and it is the only one. A tool that changes a world kept in the store records the change in the same call:
+
+```python
+from inspect_swarm import swarm_record
+
+
+def change(action: str, server: str, **fields: bool | str) -> str:
+    state = cluster()
+    state[server] = {**state[server], **fields}
+    store().set(CLUSTER, state)
+    up = sum(1 for s in state.values() if s["up"])
+    swarm_record(action=action, server=server, up=up, outage=up < QUORUM)
+    return describe(state)
+```
+
+A service in a container does the same by appending to `/swarm/world.jsonl`; a world in another container shares that directory with the default sandbox through a volume. The controller is then one loop.
+
+**Who can see the log.** Before any member starts, the swarm creates `/swarm` and the log in the default sandbox as root, with modes `700` and `600`, through inspect_ai's privileged shell, and refuses to go on if the path is a symlink or a directory above it is not root-owned. A member whose commands run as a non-root user (`bash(user=...)`, or every member once users isolation lands) cannot list the directory, read the log or append to it; the swarm reads it as root. A member that runs as root in the same container can read anything, so for root members the world belongs in a container they cannot reach, as the examples below have it. The file side exists only where the swarm can act as root: the `local` sandbox and a sandbox without usable root access get none, and there `swarm_record()` is the whole log. Verified on Docker. This one, from [`examples/cluster_outage.py`](https://github.com/meridianlabs-ai/inspect_swarm/blob/main/examples/cluster_outage.py), stops a database cluster's rolling upgrade at the first record of a change that lost quorum:
+
+```python
+from contextlib import aclosing
+
+from inspect_swarm import (
+    Controller,
+    StopReason,
+    SwarmControl,
+    WorldChanged,
+    swarm_controller,
+)
+
+
+@swarm_controller
+def until_recorded(field: str = "outage", reason: str = "outage") -> Controller:
+    """Start every member, and stop the swarm at the first world record with `field` set, or when every member has ended."""
+
+    async def run(swarm: SwarmControl) -> StopReason:
+        for m in swarm.members:
+            swarm.start(m)
+        async with aclosing(swarm.events()) as events:
+            async for event in events:
+                if isinstance(event, WorldChanged) and event.record.get(field):
+                    return reason
+        return "all_done"
+
+    return Controller(run)
+```
+
+It records the stop reason `controller:outage`. Three examples run it against the same cluster, and the controller is the same in each because nothing about the stop depends on how a member acts:
+
+- [`examples/stop_on_outage_store.py`](https://github.com/meridianlabs-ai/inspect_swarm/blob/main/examples/stop_on_outage_store.py) keeps the cluster in the sample's store. Its tools are the only write path, and each one records its change and the quorum after it with `swarm_record()`.
+- [`examples/stop_on_outage_service.py`](https://github.com/meridianlabs-ai/inspect_swarm/blob/main/examples/stop_on_outage_service.py) moves the cluster into a service in its own container, which checks quorum under its lock on every change and logs it with the caller's name. `bash()` members in their own containers reach it only through a command; the service appends to `WORLD_LOG`, and the swarm reads it from the host.
+- [`examples/stop_on_outage_bridged.py`](https://github.com/meridianlabs-ai/inspect_swarm/blob/main/examples/stop_on_outage_bridged.py) manages the same service with bridged CLI agents, whose tool calls Inspect never sees. The service's log is the record of what they did, and the swarm stops the same way.
+
+Why the record, rather than a check when the controller wakes: a check made after a tool call returns, or whenever the controller next looks, misses a loss that is over by then. In these examples a server restarted while another is down drops the cluster below quorum for an instant, and the controller would see a healthy cluster. The service and the store tools record that instant as they make the change, so the swarm stops on it.
+
+Two things follow from the design. A tool call or container command in flight finishes before its member stops, so the world can change once more after the stop begins. And the controller's job is stopping, so it returns once every member has ended: a line of `WORLD_LOG` written within an interval of the last member's end, or later from work the members left running, is read when the swarm ends and reaches the transcript and the scorer, but the controller has returned by then and the stop reason is `all_done`. Each `WorldChanged` is written to the transcript as evidence of type `world`, so a run's record is in its log whatever the members were.
