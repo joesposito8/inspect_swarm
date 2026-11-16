@@ -71,6 +71,7 @@ from inspect_swarm import (
     Boundary,
     BoundaryCallback,
     Budget,
+    MemberEnded,
     MemberHandle,
     StopReason,
     SwarmControl,
@@ -1785,7 +1786,7 @@ async def test_swarm_wait_returns_all_waiting_when_the_only_other_running_member
         control.start("waiter")
         async with aclosing(control.events()) as events:
             async for event in events:
-                if event.member == "waiter":
+                if isinstance(event, MemberEnded) and event.member == "waiter":
                     ended.set()
         return "all_done"
 

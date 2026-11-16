@@ -94,7 +94,7 @@ def escalate(first: str = "fast") -> Controller:
 - `swarm.members` are the members in roster order, as `MemberHandle`s: name, role, state (`pending`, `running` or `ended`, and for [persistent members](#persistent-members) `idle` or `ending`), status, whether it submitted and, with a verifier in the result contract, the verdict on its submission (for a persistent member, on its latest answer). A controller never sees what a member wrote unless it holds the member at a turn boundary ([Boundary callbacks](#boundary-callbacks)).
 - `swarm.start(member, input=None, *, preamble=None)` starts a member and returns at once. `input` replaces the swarm's input for that member; `None` gives it the swarm's input. The member's preamble follows either, as a user message. A member runs once, and starting one after the stop has begun raises.
 - The swarm's preamble tells each member that the members work at the same time. A controller that runs them otherwise can pass its own text as `preamble`, which replaces the whole preamble, channel instructions included, and is used as given. `preamble=False` leaves it out; the input must then hold a user message.
-- `swarm.events()` yields each event once, in order from the swarm's start. `MemberEnded` gives the member's name, status, whether it submitted, and the verdict on its submission (`passed` and `value`) when the swarm's result contract has a verifier ([Scoring](scoring.qmd#the-result-contract)). With a verifier, a submission's event waits for its verdict. `MemberIdle` and `MemberNews` come only from [persistent members](#persistent-members). Test an event's type before reading its fields. The iterator ends when no member is running or ending, none is waiting for its verdict and no event is waiting, so a member started or woken later needs a new `events()` call. Use one iterator at a time, and close it, as `aclosing()` does here.
+- `swarm.events()` yields each event once, in order from the swarm's start. `MemberEnded` gives the member's name, status, whether it submitted, and the verdict on its submission (`passed` and `value`) when the swarm's result contract has a verifier ([Scoring](scoring.qmd#the-result-contract)). With a verifier, a submission's event waits for its verdict. `MemberIdle` and `MemberNews` come only from [persistent members](#persistent-members). `WorldReport` is a change to the environment, reported by the code that owns it ([Reports from the world](#reports-from-the-world)). Test an event's type before reading its fields. The iterator ends when no member is running or ending, none is waiting for its verdict and no event is waiting, so a member started or woken later needs a new `events()` call. Use one iterator at a time, and close it, as `aclosing()` does here.
 - `check`, if given, is called with the roster when `swarm()` is called. Raise `ValueError` for a roster the controller cannot run.
 - `final`, if given, is the chain that chooses the answer: a mode such as `first` or `last`, or a list of modes. `None`, as here, is the default chain for the task's result contract ([Scoring](scoring.qmd#the-answer)). `swarm.final_chain` gives the chain the swarm applies, by mode name, such as `("verify", "vote", "first")`, so `run` can read the default the contract chose.
 - The stop reasons `all_done`, `submitted`, `verified` and `quiescence` are recorded as they are. Any other is recorded as `controller:<reason>`.
@@ -261,17 +261,72 @@ def lead_and_workers(lead: str = "lead") -> Controller:
                         swarm.choose_answer(lead, reason="the lead's answer")
                         return "submitted"
                     return "lead_ended"
-                woken = (isinstance(event, MemberNews) and event.sender == lead) or (
-                    isinstance(event, MemberIdle) and event.news
-                )
-                if woken and swarm.member(event.member).state == "idle":
-                    swarm.wake(event.member, WAKE)
+                if isinstance(event, MemberNews | MemberIdle):
+                    woken = (
+                        isinstance(event, MemberNews) and event.sender == lead
+                    ) or (isinstance(event, MemberIdle) and event.news)
+                    if woken and swarm.member(event.member).state == "idle":
+                        swarm.wake(event.member, WAKE)
         return "all_done"
 
     return Controller(run)
 ```
 
 Every worker is woken on each of the lead's writes, so a worker with no new task answers at once. The workers' answers are reports on their own tasks, so the controller makes the lead's submission the answer with `choose_answer()`.
+
+## Reports from the world
+
+A controller can stop, or wake a member, on the state of the environment. Whatever owns some state outside the members reports each change as it makes it, with `world_report(kind, **fields)`; the report is written to the transcript and reaches every running swarm as a `WorldReport` on `events()` before the call returns, so a change undone an instant later is still seen. Report the state, never a verdict (`up=1`, not `outage=True`): the controller holds the rule. A report is JSON, at most 3 levels deep and 4096 bytes.
+
+The controller reads `world_reports()` first, for the state already reached, then watches `events()`. This one, from [`examples/stop_on_outage.py`](https://github.com/meridianlabs-ai/inspect_swarm/blob/main/examples/stop_on_outage.py), stops a rolling upgrade at the first report with fewer servers up than its quorum:
+
+```python
+from contextlib import aclosing
+
+from inspect_swarm import (
+    Controller,
+    StopReason,
+    SwarmControl,
+    WorldReport,
+    swarm_controller,
+    world_reports,
+)
+
+
+@swarm_controller
+def until_outage(quorum: int = 2, reason: str = "outage") -> Controller:
+    async def run(swarm: SwarmControl) -> StopReason:
+        if any(below(r.report, quorum) for r in world_reports(kind="cluster")):
+            return reason
+        for m in swarm.members:
+            swarm.start(m)
+        async with aclosing(swarm.events()) as events:
+            async for event in events:
+                if (
+                    isinstance(event, WorldReport)
+                    and event.kind == "cluster"
+                    and below(event.report, quorum)
+                ):
+                    return reason
+        return "all_done"
+
+    return Controller(run)
+```
+
+It records the stop reason `controller:outage`. `events()` still ends when no member is running or ending; a controller that holds idle members and waits on a quiet world sleeps and calls `events()` again, missing nothing, because reports wait on the queue.
+
+**From a sandbox.** A world in a container reports through an inspect_ai sandbox service, opted into by placing `world_service(sandbox=...)` before `swarm()` in the solver chain; the container needs `python3`. Its client blocks until the host has recorded the report, whose `source` is the sandbox's name:
+
+```python
+import sys
+
+sys.path.append("/var/tmp/sandbox-services/world")
+import world
+
+world.call_world("world_report", kind="cluster", server="db-1", up=2)
+```
+
+A world in another language runs the same lines as `python3 -c "import sys; sys.path.append('/var/tmp/sandbox-services/world'); import world; world.call_world('world_report', kind='cluster', up=2)"`. A refused report fails the call and leaves inspect_ai's warning in the transcript, no event. Any root process in the world's container can forge a report, so run the world in its own container, as [`examples/stop_on_outage_service.py`](https://github.com/meridianlabs-ai/inspect_swarm/blob/main/examples/stop_on_outage_service.py) does with the controller above, or the members as non-root users with `isolation="users"` ([Isolation](isolation.qmd)). A report carries facts about the world, never a member's text. The service stops with the solver chain, before scoring: a scorer reads the history with `world_reports(state)` ([Analysis](analysis.qmd#world-reports)), and the world itself for its final state.
 
 ## Stopping on the first proof
 

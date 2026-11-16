@@ -47,6 +47,7 @@ from inspect_swarm import (
     Controller,
     FinalName,
     FinalSpec,
+    MemberEnded,
     ResultSpec,
     StopReason,
     SwarmControl,
@@ -315,7 +316,7 @@ async def test_the_provisional_answer_is_set_at_the_first_submission() -> None:
         control.start("quick")
         control.start("slow")
         async for event in control.events():
-            if event.member == "quick":
+            if isinstance(event, MemberEnded) and event.member == "quick":
                 states = [m.state for m in control.members]
                 seen.append((state.output.completion, states))
                 gate.set()
@@ -435,7 +436,7 @@ async def test_a_submission_during_grace_is_chosen_only_without_an_earlier_one(
             control.start(m)
         if earlier:
             async for event in control.events():
-                if event.member == "early":
+                if isinstance(event, MemberEnded) and event.member == "early":
                     break
         # released as the stop begins, so the late member answers in grace
         gate.set()
@@ -638,6 +639,7 @@ async def test_evidence_names_members_and_spans_and_holds_no_member_text() -> No
             control.start(m)
         ended: set[str] = set()
         async for event in control.events():
+            assert isinstance(event, MemberEnded)
             ended.add(event.member)
             if ended == {"a", "limited"}:
                 break
@@ -999,12 +1001,12 @@ async def test_a_controllers_choice_is_the_provisional_answer_at_once() -> None:
         for m in control.members:
             control.start(m)
         async for event in control.events():
-            if event.member == "b":
+            if isinstance(event, MemberEnded) and event.member == "b":
                 # `last` would answer with b
                 control.choose_answer("a", reason="earlier")
                 seen["chosen"] = state.output.completion
                 chosen.set()
-            elif event.member == "c":
+            elif isinstance(event, MemberEnded) and event.member == "c":
                 seen["later"] = state.output.completion
         return "all_done"
 
@@ -1630,6 +1632,7 @@ async def test_the_provisional_answer_follows_the_chain_after_each_verdict() -> 
             control.start(m)
         async for event in control.events():
             # the event waits for the verdict, which the answer already reflects
+            assert isinstance(event, MemberEnded)
             seen.append((event.member, state.output.completion))
         return "all_done"
 
@@ -1658,6 +1661,7 @@ async def test_the_provisional_answer_follows_the_vote_after_each_key() -> None:
             control.start(m)
         async for event in control.events():
             # the event follows the key, which the answer already reflects
+            assert isinstance(event, MemberEnded)
             seen.append((event.member, state.output.completion))
             if event.member == "c":
                 # interrupted once the majority has formed, before the final step

@@ -82,6 +82,12 @@ async def _passes(answer: str, metadata: dict[str, Any]) -> Verdict:
     return Verdict(passed=True)
 
 
+def _ended(event: ControlEvent) -> MemberEnded:
+    # these swarms hear no world reports, so every event is a member's end
+    assert isinstance(event, MemberEnded)
+    return event
+
+
 async def _start_all(control: SwarmControl) -> StopReason:
     for m in control.members:
         control.start(m)
@@ -384,16 +390,16 @@ async def test_an_open_iterator_holds_the_events_until_it_ends_or_is_closed() ->
             await anyio.sleep(0)
         # three events are queued; the first iterator takes one and stays open
         first = control.events()
-        received.append((await first.__anext__()).member)
+        received.append(_ended(await first.__anext__()).member)
         try:
             await control.events().__anext__()
         except RuntimeError as ex:
             refused.append(str(ex))
-        received.append((await first.__anext__()).member)
+        received.append(_ended(await first.__anext__()).member)
         # once it is closed, a new iterator takes the rest
         await first.aclose()
         async for event in control.events():
-            received.append(event.member)
+            received.append(_ended(event).member)
         return "all_done"
 
     stop = await run_swarm(
@@ -417,7 +423,7 @@ async def test_returning_soft_stops_members_and_cancels_them_after_grace() -> No
         for m in control.members:
             control.start(m)
         async for event in control.events():
-            if event.member == "quick":
+            if isinstance(event, MemberEnded) and event.member == "quick":
                 while in_flight.started < 1:
                     await anyio.sleep(0)
                 # released as the stop begins: the call in flight completes
@@ -478,7 +484,7 @@ async def test_a_stop_closes_scheduling_and_cancels_only_the_controller(
         if trigger == "swarm_cap":
             swarm.start("spender")
         async for event in swarm.events():
-            if event.member == "scout":
+            if isinstance(event, MemberEnded) and event.member == "scout":
                 controller_acted.append(True)
                 for m in swarm.members:
                     if m.state == "pending":

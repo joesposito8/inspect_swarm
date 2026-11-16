@@ -62,6 +62,7 @@ from ._result import (
 from ._seam import Boundary, BoundaryCallback
 from ._swarm import baseline, swarm
 from ._tools import swarm_resources
+from ._world import WorldReport, world_report, world_reports, world_service
 
 try:
     from ._version import __version__
@@ -115,6 +116,7 @@ __all__ = [
     "WaitNews",
     "WaitSpec",
     "WaitingState",
+    "WorldReport",
     "__version__",
     "answer_result",
     "artifact_result",
@@ -136,4 +138,7 @@ __all__ = [
     "synthesize",
     "topics",
     "users",
+    "world_report",
+    "world_reports",
+    "world_service",
 ]

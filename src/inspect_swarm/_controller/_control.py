@@ -40,6 +40,7 @@ from .._budget import (
     current_member,
     is_bridged,
 )
+from .._bus._record import FrozenJson
 from .._evidence import (
     SwarmTimeline,
     claim_member_names,
@@ -97,6 +98,10 @@ from .._record import (
 )
 from .._result import ResultSpec, Verdict, Verifier, key_answer, verifier_label
 from .._seam import BoundaryCallback, MemberGate, check_origin
+from .._world import (
+    WorldReport,
+    _listen,  # pyright: ignore[reportPrivateUsage]
+)
 
 if TYPE_CHECKING:
     from .._bus._bus import SwarmBus
@@ -261,7 +266,7 @@ class MemberNews:
     """The name of the member that sent the record."""
 
 
-ControlEvent = MemberEnded | MemberIdle | MemberNews
+ControlEvent = MemberEnded | MemberIdle | MemberNews | WorldReport
 """An event a controller receives from `SwarmControl.events()`. Later versions add kinds, so test an event's type before reading its fields."""
 
 
@@ -862,6 +867,7 @@ class SwarmRun:
         bus_token: "contextvars.Token[SwarmBus | None] | None" = None
         budget_token: contextvars.Token[BudgetState | None] | None = None
         running: int | None = None
+        unlisten: Callable[[], None] | None = None
         try:
             # in the swarm's span, before any member can start
             write_start()
@@ -888,6 +894,9 @@ class SwarmRun:
             # from here until the end of the finally below, swarm_result() refuses
             # reads in this sample
             running = _swarm_started()
+            # world reports accepted from here until the finally below reach this
+            # swarm's queue; earlier ones are in the transcript, for world_reports()
+            unlisten = _listen(self._report)
             # first: spans inside the swarm, members' included, log no StoreEvent;
             # the swarm's span, entered before, logs the net change
             with suspend_store_events(), ExitStack() as meter:
@@ -1052,6 +1061,8 @@ class SwarmRun:
                     current_budget.reset(budget_token)
                 if bus_token is not None:
                     current_bus.reset(bus_token)
+                if unlisten is not None:
+                    unlisten()
                 if running is not None:
                     _swarm_ended(running)
                 timeline.close()
@@ -1351,6 +1362,12 @@ class SwarmRun:
     # A delivered record that is news to an idle member, from the bus.
     def _news(self, member: str, record: "Record") -> None:
         self._queue.append(MemberNews(member, record.channel, record.id, record.sender))
+        self._notify()
+
+    # A world report accepted while this swarm runs, from world_report() or the
+    # world service. The transcript already holds it.
+    def _report(self, kind: str, source: str, report: Mapping[str, FrozenJson]) -> None:
+        self._queue.append(WorldReport(kind, source, report))
         self._notify()
 
     # A persistent member's hold after its answer was refused: its ending begins, so

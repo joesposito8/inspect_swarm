@@ -318,7 +318,7 @@ async def test_wake_refuses_what_it_cannot_take_and_leaves_the_member_idle() -> 
                     control.member("a").end(origin="test")
                     assert control.member("a").state == "ending"
                     refused("ending", lambda: control.wake("a", "x"))
-                elif event.member == "plain":
+                elif isinstance(event, MemberEnded) and event.member == "plain":
                     refused("not persistent", lambda: control.wake("plain", "x"))
         refused("ended", lambda: control.wake("a", "x"))
         with pytest.raises(KeyError):
@@ -422,6 +422,7 @@ async def test_a_member_idle_event_can_be_stale_and_the_state_decides() -> None:
             await anyio.sleep(0.01)
         async with aclosing(control.events()) as events:
             async for event in events:
+                assert isinstance(event, MemberEnded | MemberIdle | MemberNews)
                 seen.append((event, control.member(event.member).state))
                 if isinstance(event, MemberIdle) and not order:
                     order.extend([event.member, "b" if event.member == "a" else "a"])
@@ -1249,6 +1250,7 @@ async def test_the_iterator_waits_for_an_ending_member_and_ends_at_quiescence() 
         control.start("b")
         async with aclosing(control.events()) as events:
             async for event in events:
+                assert isinstance(event, MemberEnded | MemberIdle | MemberNews)
                 seen.append((event, control.member(event.member).state))
                 if event == MemberIdle("b", 0, False):
                     control.member("b").end(origin="test")

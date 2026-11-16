@@ -1,0 +1,29 @@
+# The cluster as a service in its own container, and one container per ops agent that
+# can reach it only over an internal network (stop_on_outage_service.py). The service
+# reports every change to the swarm through the `world` sandbox service in its
+# container, which needs python3; the agents' containers only need bash and curl.
+services:
+  cluster:
+    image: python:3.12-slim
+    command: ["python3", "/opt/cluster_service.py"]
+    environment:
+      UPGRADE_SECONDS: "2"
+    volumes:
+      - ./cluster_service.py:/opt/cluster_service.py:ro
+    networks: [cluster]
+    x-default: true
+  ops-1:
+    image: buildpack-deps:bookworm-curl
+    command: tail -f /dev/null
+    networks: [cluster]
+  ops-2:
+    image: buildpack-deps:bookworm-curl
+    command: tail -f /dev/null
+    networks: [cluster]
+  ops-3:
+    image: buildpack-deps:bookworm-curl
+    command: tail -f /dev/null
+    networks: [cluster]
+networks:
+  cluster:
+    internal: true

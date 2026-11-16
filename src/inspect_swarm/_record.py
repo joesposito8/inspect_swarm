@@ -713,6 +713,11 @@ def _swarm_ended(key: int) -> None:  # pyright: ignore[reportUnusedFunction]
         _running[key] -= 1
 
 
+def swarm_running() -> bool:
+    """Whether a swarm is running in the current sample."""
+    return id(transcript()) in _running
+
+
 def swarm_result(source: TaskState | EvalSample) -> SwarmResultRecord | None:
     """Read the swarm's result record.
 

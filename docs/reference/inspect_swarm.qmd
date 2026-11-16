@@ -23,6 +23,7 @@ description: Swarms, members, controllers, channels, results and the budget view
 ### VerdictSummary
 ### MemberIdle
 ### MemberNews
+### WorldReport
 ### ControlEvent
 ### MemberInfo
 ### MemberState
@@ -55,6 +56,12 @@ description: Swarms, members, controllers, channels, results and the budget view
 ### Draft
 ### Delivery
 ### Record
+
+## World reports
+
+### world_report
+### world_reports
+### world_service
 
 ## Results
 

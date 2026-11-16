@@ -134,6 +134,7 @@ An explicit `instance` is used as given: members that name the same instance sha
 
 - The sample store itself is shared. State that custom tools or agent code keep in the store with no instance is shared unless they resolve their instance with `tool_state_instance()`.
 - Tool state that a setup solver prepared at the default instance before the swarm runs is not visible to the members. They start with fresh state.
+- Store changes inside the swarm are logged as the swarm's net change, not one by one, so a change undone before the swarm ends leaves no store trace. A tool that changes a world the experiment watches should return the state it leaves, or report it with `world_report()` ([Reports from the world](controllers.qmd#reports-from-the-world)).
 
 ## Background work
 
