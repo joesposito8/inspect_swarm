@@ -39,6 +39,7 @@ from inspect_swarm import (
     leaderless,
     member,
     swarm,
+    world_report,
 )
 from inspect_swarm.scorer import MEMBER_METRICS, member_scores
 
@@ -376,6 +377,42 @@ def test_members_are_graded_only_under_a_matching_answer_contract(
             plain["verdict"],
             plain["status"],
         ) == ("solver", "graded", "1", None, None)
+
+
+@agent(name="member_scores_test_world_reporter")
+def reports_then_answers(name: str) -> Agent:
+    """`from_input`, after a world report; no swarm."""
+    answers = from_input(name)
+
+    async def execute(state: AgentState) -> AgentState:
+        world_report("world", phase="agent")
+        return await answers(state)
+
+    return execute
+
+
+def test_a_plain_agent_that_reports_to_the_world_is_graded(tmp_path: Path) -> None:
+    # the world's events are not a swarm's, so the sample's output is still graded as
+    # one plain member, when scored with the eval and when re-scored
+    calls: list[TaskState] = []
+    log = _eval(
+        tmp_path,
+        [Sample(id="s1", input=_input({"a": "1"}), target="1")],
+        reports_then_answers("a"),
+        [members(calls)],
+    )
+    rescored = score(log, [members(calls)], display="none")
+    for scored in (log, rescored):
+        result = _score(_samples(scored)["s1"])
+        assert result.value == {"best_member": 1.0, "mean_member": 1.0}
+        metadata = result.metadata
+        assert metadata is not None
+        [plain] = metadata["members"]
+        assert (plain["name"], plain["outcome"], plain["answer_key"]) == (
+            "solver",
+            "graded",
+            "1",
+        )
 
 
 # Files standing in for branches: the scorer grades `artifact.txt`, the team's

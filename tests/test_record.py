@@ -36,6 +36,7 @@ from inspect_swarm import (
     swarm_budget,
     swarm_controller,
     swarm_result,
+    world_report,
 )
 from inspect_swarm._bus._bus import current_bus
 from inspect_swarm._evidence import LEDGER_KEY, METRICS_KEY
@@ -509,6 +510,75 @@ def test_a_plain_agent_has_no_record(tmp_path: Path) -> None:
     sample = _eval(tmp_path, plain(), [probe(seen)])
     assert seen == [(True, None)]
     assert swarm_result(sample) is None
+
+
+@agent(name="record_test_plain_reporter")
+def plain_reporter() -> Agent:
+    """Answer without a swarm, reporting to the world on the way."""
+
+    async def execute(state: AgentState) -> AgentState:
+        world_report("world", phase="agent")
+        state.output = ModelOutput.from_content("mockllm", "42")
+        return state
+
+    return execute
+
+
+@solver
+def with_world(then: Agent) -> Solver:
+    """A world report before any agent, then `then`, without a swarm of this solver's own."""
+    run_then = as_solver(then)
+
+    async def solve(state: TaskState, generate: Generate) -> TaskState:
+        world_report("world", phase="setup")
+        return await run_then(state, generate)
+
+    return solve
+
+
+def test_a_sample_with_only_world_events_has_no_record(tmp_path: Path) -> None:
+    # the world's events are written without a swarm, so they are not the evidence of
+    # one whose store lost the record's id: live, from the log and when re-scored
+    seen: list[tuple[bool, Read]] = []
+    _eval(tmp_path, with_world(plain_reporter()), [probe(seen)])
+    assert seen == [(True, None)]
+    log = _log(tmp_path, with_world(plain_reporter()))
+    assert log.samples is not None
+    [sample] = log.samples
+    assert [e.kind for e in sample.events if isinstance(e, SwarmEvent)] == [
+        "world_report",
+        "world_report",
+    ]
+    assert _read(sample) is None
+    assert _rescore(log, sample) is None
+
+
+def test_world_events_beside_a_swarms_evidence_still_refuse_a_lost_id(
+    tmp_path: Path,
+) -> None:
+    log = _log(tmp_path, with_world(_pair()))
+    assert log.samples is not None
+    [logged] = log.samples
+    recovered = logged.model_copy(update={"store": {}})
+    # and a legacy sample whose only swarm evidence is an InfoEvent, beside the world's
+    legacy = recovered.model_copy(
+        update={
+            "events": [
+                *(
+                    e
+                    for e in logged.events
+                    if not isinstance(e, SwarmEvent | CommunicationEvent)
+                    or (isinstance(e, SwarmEvent) and e.kind == "world_report")
+                ),
+                InfoEvent(
+                    source="inspect_swarm", data={"type": START_TYPE, "version": 1}
+                ),
+            ]
+        }
+    )
+    for refused in (recovered, legacy):
+        _value_error(_read(refused), LOST_ID)
+        _value_error(_rescore(log, refused), LOST_ID)
 
 
 @solver

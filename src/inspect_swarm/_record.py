@@ -36,6 +36,8 @@ MemberState = Literal["pending", "running", "idle", "ending", "ended"]
 RECORD_TYPE = "result_record"
 RESULT_ID_KEY = "inspect_swarm:result_id"
 START_TYPE = "swarm_start"
+WORLD_REPORT_KIND = "world_report"
+WORLD_SERVICE_KIND = "world_service"
 
 # where the record was kept before it moved to the transcript; the reader refuses it
 _LEGACY_RECORD_KEY = "inspect_swarm:result"
@@ -839,11 +841,12 @@ def _record_data(event: Event) -> dict[str, JsonValue] | None:
     return None
 
 
-# Any event the runtime writes as a swarm runs, in either form.
+# Any event the runtime writes as a swarm runs, in either form; the world's events are
+# written without a swarm too.
 def _is_swarm_event(event: Event) -> bool:
-    return isinstance(event, SwarmEvent) or (
-        isinstance(event, InfoEvent) and event.source == "inspect_swarm"
-    )
+    if isinstance(event, SwarmEvent):
+        return event.kind not in (WORLD_REPORT_KIND, WORLD_SERVICE_KIND)
+    return isinstance(event, InfoEvent) and event.source == "inspect_swarm"
 
 
 # Inspect's attachment resolution reads a string with either prefix as a reference, and

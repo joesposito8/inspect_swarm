@@ -9,6 +9,7 @@ from inspect_ai import (
     Epochs,
     Task,
     eval,  # pyright: ignore[reportUnknownVariableType]
+    score,  # pyright: ignore[reportUnknownVariableType]
 )
 from inspect_ai.agent import Agent, AgentState, agent, as_solver, react
 from inspect_ai.analysis import SampleSummary, samples_df
@@ -26,7 +27,7 @@ from inspect_ai.scorer import (
     pass_at,
     scorer,
 )
-from inspect_ai.solver import TaskState
+from inspect_ai.solver import Generate, Solver, TaskState, solver
 from inspect_ai.util import store
 
 from inspect_swarm import (
@@ -36,6 +37,7 @@ from inspect_swarm import (
     artifact_result,
     baseline,
     member,
+    world_report,
 )
 from inspect_swarm._record import FinalRecord, MemberResult
 from inspect_swarm.analysis import AttemptRow, SwarmColumns, attempt_rows, select_at_k
@@ -612,6 +614,33 @@ def test_attempt_rows_read_a_plain_agent_without_a_record(tmp_path: Path) -> Non
     assert (row.final_value, row.best_member) == (1.0, 1.0)
     # select@k reads baseline() attempts only
     assert math.isnan(select_at_k([row], 1, "first"))
+
+
+@solver
+def reports_to_the_world() -> Solver:
+    async def solve(state: TaskState, generate: Generate) -> TaskState:
+        world_report("world", phase="setup")
+        return state
+
+    return solve
+
+
+def test_attempt_rows_read_a_plain_agent_beside_world_events(tmp_path: Path) -> None:
+    # the world's events are not a swarm's: the row has no record, as for any plain
+    # agent, when read from the eval's log and after re-scoring
+    log = _run(
+        Task(
+            dataset=[Sample(id="s1", input="What is six times seven?", target="42")],
+            solver=[reports_to_the_world(), as_solver(says("42"))],
+            scorer=[match(), rescore_members()],
+        ),
+        tmp_path,
+    )
+    rescored = score(log, [match(), rescore_members()], display="none")
+    for source in (log, rescored):
+        [row] = attempt_rows([source], scorer="match", member_scorer="rescore_members")
+        assert (row.final, row.members, row.result_kind) == (None, [], None)
+        assert (row.final_value, row.best_member) == (1.0, 1.0)
 
 
 @pytest.mark.parametrize(

@@ -19,7 +19,7 @@ from inspect_ai.util import sandbox as sandbox_env
 from pydantic import JsonValue
 
 from ._bus._record import FrozenJson, freeze_json, thaw_json
-from ._record import swarm_running
+from ._record import WORLD_REPORT_KIND, WORLD_SERVICE_KIND, swarm_running
 
 MAX_REPORT_BYTES = 4096
 """The most a report may be as JSON, kind and fields together, in UTF-8 bytes."""
@@ -118,7 +118,8 @@ def _record(kind: str, source: str, frozen: Mapping[str, FrozenJson]) -> None:
     # the event is the record; then every running swarm's queue, with no await between,
     # so the report is in both before the reporting call returns
     _world_event(
-        "world_report", {"kind": kind, "source": source, "report": thaw_json(frozen)}
+        WORLD_REPORT_KIND,
+        {"kind": kind, "source": source, "report": thaw_json(frozen)},
     )
     for listener in list(_listeners.get(transcript(), ())):
         listener(kind, source, frozen)
@@ -157,7 +158,7 @@ def world_reports(
         events = transcript().events
     reports: list[WorldReport] = []
     for event in events:
-        if not isinstance(event, SwarmEvent) or event.kind != "world_report":
+        if not isinstance(event, SwarmEvent) or event.kind != WORLD_REPORT_KIND:
             continue
         data = event.data
         if kind is not None and data.get("kind") != kind:
@@ -218,7 +219,7 @@ def world_service(sandbox: str = "default", user: str | None = None) -> Solver:
         assert handle is not None
         served.add(id(env))
         background(_poll, handle, env.default_polling_interval())
-        _world_event("world_service", {"sandbox": sandbox, "user": user})
+        _world_event(WORLD_SERVICE_KIND, {"sandbox": sandbox, "user": user})
         return state
 
     async def report(kind: str | None = None, **fields: JsonValue) -> str:

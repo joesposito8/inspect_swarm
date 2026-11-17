@@ -13,7 +13,14 @@ from inspect_ai.scorer import Score, Scorer, Target, scorer
 from inspect_ai.solver import Solver, TaskState
 from inspect_ai.util import sandbox, store
 
-from inspect_swarm import member, swarm, users, world_reports, world_service
+from inspect_swarm import (
+    member,
+    swarm,
+    swarm_result,
+    users,
+    world_reports,
+    world_service,
+)
 
 from .test_world import SEEN, collecting
 
@@ -167,6 +174,50 @@ def test_the_service_records_a_root_call_and_refuses_bad_ones(tmp_path: Path) ->
         {"version": 1, "sandbox": "default", "user": None}
     ]
     assert [(r.kind, r.source) for r in world_reports(sample)] == [("probe", "default")]
+
+
+@pytest.mark.slow
+def test_a_service_without_a_swarm_leaves_no_record(tmp_path: Path) -> None:
+    # a chain with world_service() and no swarm(): the report is kept, and the world's
+    # events are no evidence of a swarm, so swarm_result() is None live and from the log
+    @agent(name="world_sandbox_test_reporter")
+    def reporter() -> Agent:
+        async def execute(state: AgentState) -> AgentState:
+            call = "world.call_world('world_report', kind='alone', up=1)"
+            result = await sandbox().exec(_client(call), timeout=60)
+            store().set("reported", result.success)
+            return state
+
+        return execute
+
+    seen: list[object] = []
+
+    @scorer(metrics=[])
+    def reads_the_record() -> Scorer:
+        async def score(state: TaskState, target: Target) -> Score:
+            seen.append(swarm_result(state))
+            return Score(value=1)
+
+        return score
+
+    compose = tmp_path / "compose.yaml"
+    compose.write_text(_COMPOSE.format(image="python:3.12-slim"))
+    task = Task(
+        dataset=[Sample(input="x")],
+        solver=[world_service(), as_solver(reporter())],
+        scorer=reads_the_record(),
+        sandbox=("docker", str(compose)),
+    )
+    [log] = eval(
+        task, model="mockllm/model", log_dir=str(tmp_path / "logs"), display="none"
+    )
+    assert log.status == "success", log.error
+    assert log.samples is not None
+    [sample] = log.samples
+    assert sample.store["reported"] is True
+    assert seen == [None]
+    assert swarm_result(sample) is None
+    assert [(r.kind, r.source) for r in world_reports(sample)] == [("alone", "default")]
 
 
 @pytest.mark.slow
