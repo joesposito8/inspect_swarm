@@ -126,7 +126,7 @@ reports = [dict(r.report) for r in world_reports(state, kind=KIND)]
 2. `freeze_json(dict(fields), MAX_REPORT_DEPTH)` refuses a container past the depth before visiting inside it, so a thousand-level input or a cycle never reaches `RecursionError`: "A world report may nest at most 3 levels deep, counting the report itself as the first." A non-string key, a tuple or any non-JSON type: "A world report must be JSON data; <freeze_json's detail>". Both errors are re-raised as `ValueError` `from None`.
 3. `json.dumps({"kind": kind, "report": thaw_json(frozen)}, ensure_ascii=False, allow_nan=False, separators=(",", ":"))` refuses `NaN` and infinities: "A world report must be JSON data; it holds a NaN or an infinity." Its UTF-8 length over `MAX_REPORT_BYTES`, multibyte characters and the envelope counted: "A world report may be at most 4096 bytes as JSON; this one is <n>."
 
-The caps are `MAX_REPORT_BYTES = 4096` and `MAX_REPORT_DEPTH = 3`, the report object being level 1 (decision: Ransom, 2026-11-16): a report is a small snapshot, not a dump, and both are module constants a world may raise. Both entrypoints pass the frozen mapping, never the raw fields, to the record.
+The caps are `MAX_REPORT_BYTES = 4096` and `MAX_REPORT_DEPTH = 3`, the report object being level 1 (decision: Ransom, 2026-11-16): a report is a small snapshot, not a dump. Both are module constants, not settings: a world cannot change them, and a later release of inspect_swarm may raise them. Both entrypoints pass the frozen mapping, never the raw fields, to the record.
 
 ### Recording
 
@@ -338,7 +338,7 @@ One pull request, `feat: world reports, so a controller can stop on the state of
 
 None. The five this design raised are decided:
 
-1. **The caps** are 4096 bytes and depth 3, module constants a world may raise (decision: Ransom, 2026-11-16; [Validation](#validation)).
+1. **The caps** are 4096 bytes and depth 3, module constants that a world cannot change and a later release may raise (decision: Ransom, 2026-11-16; [Validation](#validation)).
 2. **Non-Python worlds**: the container has `python3`, `requires_python` is left on, and a world in another language runs the client in a subprocess (decision: Ransom, 2026-11-16; [Reports from a sandbox](#reports-from-a-sandbox-the-world_service-solver)).
 3. **A refused report** writes no event; the caller's error and inspect_ai's warning are the evidence (decision: Ransom, 2026-11-16; [Evidence](#evidence)).
 4. **`events()` while every member is idle** keeps its rule; a controller sleeps and calls it again, and an opt-in flag is built when someone needs it (decision: Ransom, 2026-11-16; [Quiescence](#quiescence)).
