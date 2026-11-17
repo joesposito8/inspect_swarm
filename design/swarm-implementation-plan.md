@@ -478,6 +478,7 @@ Unordered; each line is an item that may be done in any order or in part (decisi
 - Inspect Scout scanners for coordination failures.
 - Checkpoint and resume for swarms.
 - A swarm view in the log viewer.
+- World reports: `WorldReport` on `events()`, `world_report()` from host code and the `world_service()` solver for reports from a sandbox ([swarm-world-reports.md](swarm-world-reports.md)).
 
 ## Alternatives considered
 
